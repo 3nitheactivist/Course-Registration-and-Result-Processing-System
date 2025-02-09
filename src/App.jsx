@@ -1,0 +1,104 @@
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+} from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "./context/AuthContext"; // ✅ Import useAuth
+import Login from "./pages/Authentication/Login/Login";
+import SignUp from "./pages/Authentication/SignUp/SignUp";
+import AdminDashboard from "./pages/AdminPages/AdminDashboard/AdminDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
+import LoadingScreen from "./components/LoadingScreen/LoadingScreen";
+import StudentDashboard from "./pages/StudentPages/StudentDashboard/StudentDashboard";
+import ManageCourses from "./pages/AdminPages/ManageCourses/ManageCourses";
+import "antd/dist/reset.css"; // or antd/dist/antd.css for older versions
+import EnrollStudents from "./pages/AdminPages/EnrollStudents/EnrollStudents";
+import UploadResults from "./pages/AdminPages/UploadResults/UploadResults";
+import CreateCourse from "./pages/AdminPages/ManageCourses/CreateCourse/CreateCourse";
+import ViewCourse from "./pages/AdminPages/ManageCourses/ViewCourse/ViewCourse";
+import AdminLayout from "./pages/AdminPages/AdminLayout";
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LoadingScreenWrapper />} />{" "}
+        {/* Use wrapper */}
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/login" element={<Login />} />
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute>
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <ProtectedRoute>
+              <EnrollStudents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/courses"
+          element={
+            <ProtectedRoute>
+              <ManageCourses />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/admin/courses/createCourse" element={<CreateCourse />} />
+        <Route path="/admin/courses/viewCourse" element={<ViewCourse />} />
+        <Route
+          path="/admin/results"
+          element={
+            <ProtectedRoute>
+              <UploadResults />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/studentDashboard"
+          element={
+            <ProtectedRoute>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </Router>
+  );
+}
+
+// ✅ New Wrapper to prevent early redirection issues
+function LoadingScreenWrapper() {
+  const { user, loading } = useAuth(); // ✅ No more ReferenceError
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading) {
+      setTimeout(() => {
+        if (user) {
+          navigate("/admin/dashboard");
+        } else {
+          navigate("/login");
+        }
+      }, 2000);
+    }
+  }, [user, loading, navigate]);
+
+  return loading ? (
+    <div className="auth-loading-container">
+      <p className="auth-loading-text">Authenticating...</p>
+    </div>
+  ) : (
+    <LoadingScreen />
+  );
+}
+
+export default App;

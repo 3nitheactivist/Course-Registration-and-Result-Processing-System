@@ -1,0 +1,13 @@
+.custom-menu .ant-menu-item-selected span {
+    color: #1677ff !important;  /* Blue color */
+    transition: linear .1s color;
+  }
+  
+  /* .custom-menu .ant-menu-item:hover span {
+    color: #1890ff !important;
+  }
+   */
+  /* For the active state background */
+  .custom-menu .ant-menu-item-selected {
+    background-color: #e6f7ff !important;
+  }
