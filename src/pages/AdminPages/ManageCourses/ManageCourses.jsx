@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Table, Input, Space, Breadcrumb, Spin, message } from "antd";
+import { Table, Input, Space, Breadcrumb, Spin, message, Skeleton } from "antd";
 import { EyeOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { db } from "../../../firebase/firebaseConfig";
 import { collection, query, orderBy, limit, getDocs } from "firebase/firestore"; // Firestore functions
@@ -142,10 +142,10 @@ const ManageCourses = () => {
 
             {/* Show Spinner while loading */}
             {loading ? (
-              <Spin size="large" />
+              <Skeleton active paragraph={{rows: 3}} />
             ) : (
               <Table
-                rowSelection={{ type: "checkbox" }}
+                // rowSelection={{ type: "checkbox" }}
                 columns={columns}
                 dataSource={filteredCourses}
                 pagination={{ pageSize: 3 }}

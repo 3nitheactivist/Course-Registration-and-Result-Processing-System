@@ -93,7 +93,7 @@ const AdminLayout = ({ children }) => {
             Dashboard
           </Menu.Item>
           <Menu.Item
-            key="/admin/users"
+            key="/admin/students"
             icon={
               <img
                 src={useri}
@@ -101,7 +101,7 @@ const AdminLayout = ({ children }) => {
                 style={{ width: "16px", height: "16px" }}
               />
             }
-            onClick={() => navigate("/admin/users")}
+            onClick={() => navigate("/admin/students")}
           >
             Users/Students
           </Menu.Item>

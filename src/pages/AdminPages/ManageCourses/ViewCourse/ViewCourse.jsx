@@ -1,11 +1,30 @@
-
-
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Breadcrumb, Table, Input, Space, Button, Modal, Form, message } from "antd";
-import { HomeOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  Breadcrumb,
+  Table,
+  Input,
+  Space,
+  Button,
+  Modal,
+  Form,
+  message,
+  Skeleton,
+} from "antd";
+import {
+  HomeOutlined,
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+} from "@ant-design/icons";
 import { db } from "../../../../firebase/firebaseConfig";
-import { collection, deleteDoc, doc, updateDoc, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  updateDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import AdminLayout from "../../AdminLayout";
 import "./ViewCourse.css";
 
@@ -29,6 +48,7 @@ const ViewCourse = () => {
         ...doc.data(),
       }));
       setCourses(courseList);
+      setLoading(false);
     });
 
     // Cleanup subscription on component unmount
@@ -77,15 +97,19 @@ const ViewCourse = () => {
       message.warning("Please select at least one course to delete!");
       return;
     }
-  
+
     setLoading(true);
     try {
-      await Promise.all(courseIds.map(async (courseId) => {
-        await deleteDoc(doc(db, "courses", courseId));
-      }));
-  
+      await Promise.all(
+        courseIds.map(async (courseId) => {
+          await deleteDoc(doc(db, "courses", courseId));
+        })
+      );
+
       message.success("Selected courses deleted successfully!");
-      setSelectedRowKeys((prevKeys) => prevKeys.filter((key) => !courseIds.includes(key)));
+      setSelectedRowKeys((prevKeys) =>
+        prevKeys.filter((key) => !courseIds.includes(key))
+      );
     } catch (error) {
       console.error("Error deleting courses:", error);
       message.error("Failed to delete selected courses!");
@@ -93,7 +117,6 @@ const ViewCourse = () => {
       setLoading(false);
     }
   };
-  
 
   // Show edit modal
   const handleEdit = (record) => {
@@ -128,14 +151,19 @@ const ViewCourse = () => {
       key: "actions",
       render: (_, record) => (
         <Space>
-          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>Edit</Button>
-          <Button icon={<DeleteOutlined />} danger onClick={() => handleDelete([record.key])}>
+          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+            Edit
+          </Button>
+          <Button
+            icon={<DeleteOutlined />}
+            danger
+            onClick={() => handleDelete([record.key])}
+          >
             Delete
           </Button>
         </Space>
       ),
     },
-    
   ];
 
   return (
@@ -175,16 +203,19 @@ const ViewCourse = () => {
       </Button>
 
       {/* Course Table */}
-      <Table
-        rowSelection={{
-          selectedRowKeys,
-          onChange: (keys) => setSelectedRowKeys(keys),
-        }}
-        columns={columns}
-        dataSource={filteredCourses}
-        pagination={{ pageSize: 5 }}
-        loading={loading}
-      />
+      {loading ? (
+        <Skeleton active paragraph={{ rows: 6 }} title={false} />
+      ) : (
+        <Table
+          rowSelection={{
+            selectedRowKeys,
+            onChange: (keys) => setSelectedRowKeys(keys),
+          }}
+          columns={columns}
+          dataSource={filteredCourses}
+          pagination={{ pageSize: 5 }}
+        />
+      )}
 
       {/* Edit Course Modal */}
       <Modal
@@ -194,19 +225,39 @@ const ViewCourse = () => {
         onCancel={() => setIsEditModalVisible(false)}
       >
         <Form form={form} layout="vertical">
-          <Form.Item label="Course Title" name="courseTitle" rules={[{ required: true, message: "Please enter course title" }]}>
+          <Form.Item
+            label="Course Title"
+            name="courseTitle"
+            rules={[{ required: true, message: "Please enter course title" }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item label="Course Code" name="courseCode" rules={[{ required: true, message: "Please enter course code" }]}>
+          <Form.Item
+            label="Course Code"
+            name="courseCode"
+            rules={[{ required: true, message: "Please enter course code" }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item label="Credit Hours" name="creditHours" rules={[{ required: true, message: "Please enter credit hours" }]}>
+          <Form.Item
+            label="Credit Hours"
+            name="creditHours"
+            rules={[{ required: true, message: "Please enter credit hours" }]}
+          >
             <Input type="number" />
           </Form.Item>
-          <Form.Item label="Department" name="department" rules={[{ required: true, message: "Please enter department" }]}>
+          <Form.Item
+            label="Department"
+            name="department"
+            rules={[{ required: true, message: "Please enter department" }]}
+          >
             <Input />
           </Form.Item>
-          <Form.Item label="Semester" name="semester" rules={[{ required: true, message: "Please enter semester" }]}>
+          <Form.Item
+            label="Semester"
+            name="semester"
+            rules={[{ required: true, message: "Please enter semester" }]}
+          >
             <Input />
           </Form.Item>
         </Form>

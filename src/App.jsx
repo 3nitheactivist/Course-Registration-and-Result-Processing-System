@@ -18,7 +18,10 @@ import EnrollStudents from "./pages/AdminPages/EnrollStudents/EnrollStudents";
 import UploadResults from "./pages/AdminPages/UploadResults/UploadResults";
 import CreateCourse from "./pages/AdminPages/ManageCourses/CreateCourse/CreateCourse";
 import ViewCourse from "./pages/AdminPages/ManageCourses/ViewCourse/ViewCourse";
-import AdminLayout from "./pages/AdminPages/AdminLayout";
+import ManageStudents from "./pages/AdminPages/EnrollStudents/ManageStudents/ManageStudents";
+import ViewStudents from "./pages/AdminPages/EnrollStudents/ViewStudents/ViewStudents";
+import StudentProfile from "./pages/AdminPages/EnrollStudents/ViewStudents/StudentProfile";
+// import AdminLayout from "./pages/AdminPages/AdminLayout";
 
 function App() {
   return (
@@ -37,10 +40,34 @@ function App() {
           }
         />
         <Route
-          path="/admin/users"
+          path="/admin/students"
+          element={
+            <ProtectedRoute>
+              <ManageStudents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/students/enroll"
           element={
             <ProtectedRoute>
               <EnrollStudents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/students/view"
+          element={
+            <ProtectedRoute>
+              <ViewStudents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/students/profile/:studentId"
+          element={
+            <ProtectedRoute>
+              <StudentProfile />
             </ProtectedRoute>
           }
         />
@@ -52,8 +79,22 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="/admin/courses/createCourse" element={<CreateCourse />} />
-        <Route path="/admin/courses/viewCourse" element={<ViewCourse />} />
+        <Route
+          path="/admin/courses/createCourse"
+          element={
+            <ProtectedRoute>
+              <CreateCourse />{" "}
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/courses/viewCourse"
+          element={
+            <ProtectedRoute>
+              <ViewCourse />{" "}
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/admin/results"
           element={

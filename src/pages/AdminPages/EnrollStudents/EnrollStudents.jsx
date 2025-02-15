@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Alert } from "antd";
+import { Alert, Skeleton } from "antd";
 import {
   Breadcrumb,
   Table,
@@ -53,6 +53,7 @@ const EnrollStudents = () => {
     const q = query(collection(db, "students"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setStudents(snapshot.docs.map((doc) => ({ key: doc.id, ...doc.data() })));
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -259,6 +260,7 @@ const EnrollStudents = () => {
       {/* Breadcrumb Navigation */}
       <Breadcrumb style={{ marginBottom: "16px", cursor: "pointer" }}>
         <Breadcrumb.Item onClick={() => navigate("/admin/students")}>
+         <HomeOutlined style={{ paddingInline: "10px" }} />
           Manage Students
         </Breadcrumb.Item>
         <Breadcrumb.Item>Enroll Student</Breadcrumb.Item>
@@ -293,12 +295,16 @@ const EnrollStudents = () => {
       </Space>
 
       {/* Students Table */}
-      <Table
+
+      {loading ? (
+         <Skeleton.Paragraph active rows={4} style={{ marginTop: 16 }} />
+      ) : (
+        <Table
         columns={columns}
         dataSource={students}
         pagination={{ pageSize: 5 }}
-        loading={loading}
       />
+      )}
 
       {/* ✅ Enroll Student Modal (Now Includes Course Selection) */}
       <Modal

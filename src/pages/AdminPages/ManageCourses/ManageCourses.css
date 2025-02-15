@@ -45,7 +45,9 @@
   letter-spacing: 0.09px;
 }
 .course-card-icon {
-  opacity: 0;
+  /* opacity: 0; */
+  font-size: 25px;
+  display: flex;
 }
 
 /* TABLE COMPONENT*/
