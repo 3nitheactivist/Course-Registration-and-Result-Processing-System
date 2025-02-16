@@ -297,7 +297,7 @@ const EnrollStudents = () => {
       {/* Students Table */}
 
       {loading ? (
-         <Skeleton.Paragraph active rows={4} style={{ marginTop: 16 }} />
+        <Skeleton active paragraph={{ rows: 4 }} style={{ marginTop: 16 }} />
       ) : (
         <Table
         columns={columns}

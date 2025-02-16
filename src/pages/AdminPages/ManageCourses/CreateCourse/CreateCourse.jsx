@@ -36,47 +36,57 @@ const CreateCourse = () => {
   const [alertMessage, setAlertMessage] = useState(null);
   const [alertType, setAlertType] = useState("info");
 
-
   const validateCSVData = (data) => {
-    const requiredFields = ["courseTitle", "courseCode", "creditHours", "department", "semester", "level"];
-  
+    const requiredFields = [
+      "courseTitle",
+      "courseCode",
+      "creditHours",
+      "department",
+      "semester",
+      "level",
+    ];
+
     for (const row of data) {
-      const missingFields = requiredFields.filter(field => !row[field]);
+      const missingFields = requiredFields.filter((field) => !row[field]);
       if (missingFields.length > 0) {
-        setAlertMessage(`Missing required fields: ${missingFields.join(", ")} in CSV data`);
+        setAlertMessage(
+          `Missing required fields: ${missingFields.join(", ")} in CSV data`
+        );
         setAlertType("error");
         return false;
       }
     }
     return true;
   };
-  
 
   const onFinish = async (values) => {
     if (importEnabled && csvFile) {
       await handleCSVUpload();
       return;
     }
-  
+
     if (!values.courseCode) {
       setAlertMessage("Course Code is missing!");
       setAlertType("error");
       return;
     }
-  
+
     setLoading(true);
     try {
       const normalizedCourseCode = values.courseCode.toLowerCase();
       const courseRef = collection(db, "courses");
-      const q = query(courseRef, where("courseCode", "==", normalizedCourseCode));
+      const q = query(
+        courseRef,
+        where("courseCode", "==", normalizedCourseCode)
+      );
       const querySnapshot = await getDocs(q);
-  
+
       if (!querySnapshot.empty) {
         setAlertMessage("This course is already registered!");
         setAlertType("error");
         return;
       }
-  
+
       await addDoc(courseRef, {
         courseTitle: values.courseTitle,
         courseCode: normalizedCourseCode,
@@ -86,19 +96,19 @@ const CreateCourse = () => {
         level: values.level,
         createdAt: serverTimestamp(),
       });
-  
+
       setAlertMessage("Course created successfully!");
       setAlertType("success");
-  
+
       // ✨ Reset Form & Upload Field
       form.resetFields();
       setCsvFile(null);
-  
+
       // ✨ Reset Upload.Dragger UI
       setTimeout(() => {
         document.querySelector(".ant-upload-list").innerHTML = "";
       }, 100);
-  
+
       setSubmitStatus("success");
     } catch (error) {
       console.error("Error adding course:", error);
@@ -108,7 +118,6 @@ const CreateCourse = () => {
       setLoading(false);
     }
   };
-  
 
   const handleCSVUpload = async () => {
     if (!csvFile) {
@@ -116,21 +125,22 @@ const CreateCourse = () => {
       setAlertType("error");
       return;
     }
-  
+
     setLoading(true);
-  
+
     const reader = new FileReader();
     reader.onload = async (event) => {
       const text = event.target.result;
-  
+
       Papa.parse(text, {
         header: true,
         skipEmptyLines: true,
-        transformHeader: (header) => header.trim().toLowerCase().replace(/['"]+/g, ""), // Normalize headers
+        transformHeader: (header) =>
+          header.trim().toLowerCase().replace(/['"]+/g, ""), // Normalize headers
         transform: (value) => value.trim().replace(/['"]+/g, ""),
         complete: async (result) => {
           console.log("📂 Parsed CSV Data:", result.data); // Debugging
-  
+
           // ✅ Fix headers by mapping lowercase headers to expected camelCase format
           const fixedData = result.data.map((row) => ({
             courseTitle: row.coursetitle,
@@ -140,31 +150,36 @@ const CreateCourse = () => {
             semester: row.semester,
             level: row.level,
           }));
-  
+
           console.log("✅ Fixed CSV Data:", fixedData); // Debugging
-  
+
           if (!validateCSVData(fixedData)) {
             setLoading(false);
             return;
           }
-  
+
           try {
             const courseCollection = collection(db, "courses");
             let successCount = 0;
             let failureCount = 0;
-  
+
             for (const course of fixedData) {
               try {
                 const normalizedCourseCode = course.courseCode.toLowerCase();
-                const q = query(courseCollection, where("courseCode", "==", normalizedCourseCode));
+                const q = query(
+                  courseCollection,
+                  where("courseCode", "==", normalizedCourseCode)
+                );
                 const querySnapshot = await getDocs(q);
-  
+
                 if (!querySnapshot.empty) {
-                  console.log(`Skipping duplicate course: ${course.courseCode}`);
+                  console.log(
+                    `Skipping duplicate course: ${course.courseCode}`
+                  );
                   failureCount++;
                   continue;
                 }
-  
+
                 await addDoc(courseCollection, {
                   courseTitle: course.courseTitle,
                   courseCode: normalizedCourseCode,
@@ -176,24 +191,27 @@ const CreateCourse = () => {
                 });
                 successCount++;
               } catch (error) {
-                console.error(`Error adding course ${course.courseCode}:`, error);
+                console.error(
+                  `Error adding course ${course.courseCode}:`,
+                  error
+                );
                 failureCount++;
               }
             }
-  
+
             setAlertMessage(
               `CSV Upload Complete: ${successCount} courses added, ${failureCount} failed/duplicates`
             );
             setAlertType(failureCount === 0 ? "success" : "warning");
-  
+
             // ✨ Reset file input (Clears the uploaded file)
             setCsvFile(null);
-  
+
             // ✨ Reset Upload.Dragger by clearing file list
             setTimeout(() => {
               document.querySelector(".ant-upload-list").innerHTML = ""; // Clear UI list
             }, 100);
-  
+
             form.resetFields();
           } catch (error) {
             console.error("Error uploading CSV:", error);
@@ -205,10 +223,10 @@ const CreateCourse = () => {
         },
       });
     };
-  
+
     reader.readAsText(csvFile);
   };
-  
+
   return (
     <AdminLayout>
       {/* Show success/error message if submission is completed */}
@@ -247,8 +265,18 @@ const CreateCourse = () => {
             </Breadcrumb.Item>
             <Breadcrumb.Item>Create Course</Breadcrumb.Item>
           </Breadcrumb>
+          <hr />
 
-          <h2>Create Course</h2>
+          <h2
+            style={{
+              fontWeight: "500",
+              fontSize: "18px",
+              color: "#222222",
+              padding: "10px 0px",
+            }}
+          >
+            Create Course
+          </h2>
 
           {/* Show Ant Design Alert for Success or Error Messages */}
           {/* Show Ant Design Alert for Success or Error Messages */}
