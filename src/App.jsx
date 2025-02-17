@@ -21,6 +21,8 @@ import ViewCourse from "./pages/AdminPages/ManageCourses/ViewCourse/ViewCourse";
 import ManageStudents from "./pages/AdminPages/EnrollStudents/ManageStudents/ManageStudents";
 import ViewStudents from "./pages/AdminPages/EnrollStudents/ViewStudents/ViewStudents";
 import StudentProfile from "./pages/AdminPages/EnrollStudents/ViewStudents/StudentProfile";
+import ResultsOverview from "./pages/AdminPages/UploadResults/ResultsOverview";
+
 // import AdminLayout from "./pages/AdminPages/AdminLayout";
 
 function App() {
@@ -96,10 +98,18 @@ function App() {
           }
         />
         <Route
-          path="/admin/results"
+          path="/admin/results/uploadResults"
           element={
             <ProtectedRoute>
               <UploadResults />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/results"
+          element={
+            <ProtectedRoute>
+              <ResultsOverview />
             </ProtectedRoute>
           }
         />
