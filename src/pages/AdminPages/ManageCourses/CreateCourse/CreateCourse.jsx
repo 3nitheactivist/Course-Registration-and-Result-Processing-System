@@ -1,5 +1,6 @@
 // import React, { useState } from "react";
 // import { useNavigate } from "react-router-dom";
+// import { getAuth } from "firebase/auth";
 // import {
 //   Breadcrumb,
 //   Button,
@@ -11,6 +12,7 @@
 //   Col,
 //   Alert,
 //   Result,
+//   Select, // <-- added Select here
 // } from "antd";
 // import { HomeOutlined, InboxOutlined } from "@ant-design/icons";
 // import Papa from "papaparse";
@@ -26,6 +28,8 @@
 // import AdminLayout from "../../AdminLayout";
 // import "./CreateCourse.css";
 
+// const { Option } = Select; // <-- Destructure Option from Select
+
 // const CreateCourse = () => {
 //   const navigate = useNavigate();
 //   const [form] = Form.useForm();
@@ -35,6 +39,9 @@
 //   const [submitStatus, setSubmitStatus] = useState(null);
 //   const [alertMessage, setAlertMessage] = useState(null);
 //   const [alertType, setAlertType] = useState("info");
+
+//   const auth = getAuth();
+//   const currentUser = auth.currentUser;
 
 //   const validateCSVData = (data) => {
 //     const requiredFields = [
@@ -94,17 +101,18 @@
 //         department: values.department,
 //         semester: values.semester,
 //         level: values.level,
+//         userId: currentUser.uid, // <-- Store UID here
 //         createdAt: serverTimestamp(),
 //       });
 
 //       setAlertMessage("Course created successfully!");
 //       setAlertType("success");
 
-//       // ✨ Reset Form & Upload Field
+//       // Reset Form & Upload Field
 //       form.resetFields();
 //       setCsvFile(null);
 
-//       // ✨ Reset Upload.Dragger UI
+//       // Reset Upload.Dragger UI
 //       setTimeout(() => {
 //         document.querySelector(".ant-upload-list").innerHTML = "";
 //       }, 100);
@@ -136,12 +144,12 @@
 //         header: true,
 //         skipEmptyLines: true,
 //         transformHeader: (header) =>
-//           header.trim().toLowerCase().replace(/['"]+/g, ""), // Normalize headers
+//           header.trim().toLowerCase().replace(/['"]+/g, ""),
 //         transform: (value) => value.trim().replace(/['"]+/g, ""),
 //         complete: async (result) => {
-//           console.log("📂 Parsed CSV Data:", result.data); // Debugging
+//           console.log("Parsed CSV Data:", result.data);
 
-//           // ✅ Fix headers by mapping lowercase headers to expected camelCase format
+//           // Fix headers by mapping lowercase headers to expected camelCase format
 //           const fixedData = result.data.map((row) => ({
 //             courseTitle: row.coursetitle,
 //             courseCode: row.coursecode,
@@ -151,7 +159,7 @@
 //             level: row.level,
 //           }));
 
-//           console.log("✅ Fixed CSV Data:", fixedData); // Debugging
+//           console.log("Fixed CSV Data:", fixedData);
 
 //           if (!validateCSVData(fixedData)) {
 //             setLoading(false);
@@ -204,12 +212,12 @@
 //             );
 //             setAlertType(failureCount === 0 ? "success" : "warning");
 
-//             // ✨ Reset file input (Clears the uploaded file)
+//             // Reset file input
 //             setCsvFile(null);
 
-//             // ✨ Reset Upload.Dragger by clearing file list
+//             // Reset Upload.Dragger UI
 //             setTimeout(() => {
-//               document.querySelector(".ant-upload-list").innerHTML = ""; // Clear UI list
+//               document.querySelector(".ant-upload-list").innerHTML = "";
 //             }, 100);
 
 //             form.resetFields();
@@ -229,7 +237,6 @@
 
 //   return (
 //     <AdminLayout>
-//       {/* Show success/error message if submission is completed */}
 //       {submitStatus ? (
 //         <Result
 //           status={submitStatus}
@@ -278,8 +285,6 @@
 //             Create Course
 //           </h2>
 
-//           {/* Show Ant Design Alert for Success or Error Messages */}
-//           {/* Show Ant Design Alert for Success or Error Messages */}
 //           {alertMessage && (
 //             <Alert
 //               message={alertMessage}
@@ -333,7 +338,12 @@
 //                         name="semester"
 //                         rules={[{ required: !importEnabled }]}
 //                       >
-//                         <Input placeholder="Enter semester" />
+//                         <Select placeholder="Select Semester">
+//                           <Option value="FirstSemester">First Semester</Option>
+//                           <Option value="SecondSemester">
+//                             Second Semester
+//                           </Option>
+//                         </Select>
 //                       </Form.Item>
 //                     </Col>
 //                     <Col span={12}>
@@ -414,6 +424,7 @@
 
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getAuth } from "firebase/auth";
 import {
   Breadcrumb,
   Button,
@@ -425,7 +436,7 @@ import {
   Col,
   Alert,
   Result,
-  Select,  // <-- added Select here
+  Select,
 } from "antd";
 import { HomeOutlined, InboxOutlined } from "@ant-design/icons";
 import Papa from "papaparse";
@@ -441,7 +452,7 @@ import {
 import AdminLayout from "../../AdminLayout";
 import "./CreateCourse.css";
 
-const { Option } = Select; // <-- Destructure Option from Select
+const { Option } = Select;
 
 const CreateCourse = () => {
   const navigate = useNavigate();
@@ -452,6 +463,9 @@ const CreateCourse = () => {
   const [submitStatus, setSubmitStatus] = useState(null);
   const [alertMessage, setAlertMessage] = useState(null);
   const [alertType, setAlertType] = useState("info");
+
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
 
   const validateCSVData = (data) => {
     const requiredFields = [
@@ -492,6 +506,8 @@ const CreateCourse = () => {
     try {
       const normalizedCourseCode = values.courseCode.toLowerCase();
       const courseRef = collection(db, "courses");
+      // Optional: If you want to restrict duplicate courses per admin,
+      // you can also add: where("userId", "==", currentUser.uid)
       const q = query(
         courseRef,
         where("courseCode", "==", normalizedCourseCode)
@@ -511,6 +527,7 @@ const CreateCourse = () => {
         department: values.department,
         semester: values.semester,
         level: values.level,
+        userId: currentUser.uid, // Tie the course to the admin user
         createdAt: serverTimestamp(),
       });
 
@@ -558,7 +575,7 @@ const CreateCourse = () => {
         complete: async (result) => {
           console.log("Parsed CSV Data:", result.data);
 
-          // Fix headers by mapping lowercase headers to expected camelCase format
+          // Map CSV data to expected field names
           const fixedData = result.data.map((row) => ({
             courseTitle: row.coursetitle,
             courseCode: row.coursecode,
@@ -586,11 +603,14 @@ const CreateCourse = () => {
                 const q = query(
                   courseCollection,
                   where("courseCode", "==", normalizedCourseCode)
+                  // Optionally add: where("userId", "==", currentUser.uid)
                 );
                 const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
-                  console.log(`Skipping duplicate course: ${course.courseCode}`);
+                  console.log(
+                    `Skipping duplicate course: ${course.courseCode}`
+                  );
                   failureCount++;
                   continue;
                 }
@@ -602,11 +622,15 @@ const CreateCourse = () => {
                   department: course.department,
                   semester: course.semester,
                   level: course.level,
+                  userId: currentUser.uid, // Tie the course to the admin user
                   createdAt: serverTimestamp(),
                 });
                 successCount++;
               } catch (error) {
-                console.error(`Error adding course ${course.courseCode}:`, error);
+                console.error(
+                  `Error adding course ${course.courseCode}:`,
+                  error
+                );
                 failureCount++;
               }
             }
@@ -616,14 +640,11 @@ const CreateCourse = () => {
             );
             setAlertType(failureCount === 0 ? "success" : "warning");
 
-            // Reset file input
+            // Reset file input and form
             setCsvFile(null);
-
-            // Reset Upload.Dragger UI
             setTimeout(() => {
               document.querySelector(".ant-upload-list").innerHTML = "";
             }, 100);
-
             form.resetFields();
           } catch (error) {
             console.error("Error uploading CSV:", error);
@@ -744,7 +765,9 @@ const CreateCourse = () => {
                       >
                         <Select placeholder="Select Semester">
                           <Option value="FirstSemester">First Semester</Option>
-                          <Option value="SecondSemester">Second Semester</Option>
+                          <Option value="SecondSemester">
+                            Second Semester
+                          </Option>
                         </Select>
                       </Form.Item>
                     </Col>

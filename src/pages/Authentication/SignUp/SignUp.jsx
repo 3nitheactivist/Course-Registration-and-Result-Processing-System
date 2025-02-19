@@ -5,7 +5,11 @@ import { SyncLoader } from "react-spinners";
 import { getFirestore, doc, setDoc } from "firebase/firestore";
 import { useToast } from "../../../context/ToastContext";
 import { Link, useNavigate } from "react-router-dom";
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  updateProfile,
+} from "firebase/auth";
 // SVG icons as components
 const EyeIcon = () => (
   <svg
@@ -57,44 +61,6 @@ const SignUp = () => {
   const db = getFirestore();
   const navigate = useNavigate();
 
-  // const handleSignUp = async () => {
-  //   if (
-  //     !role ||
-  //     !email ||
-  //     !password ||
-  //     (role === "student" && (!name || !matricNumber || !department))
-  //   ) {
-  //     toast.addToast("Please fill in all fields", "error");
-  //     return;
-  //   }
-
-  //   if (password !== confirmPassword) {
-  //     toast.addToast("Passwords do not match", "error");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-  //     const userCredential = await createUserWithEmailAndPassword(
-  //       auth,
-  //       email,
-  //       password
-  //     );
-  //     const user = userCredential.user;
-
-  //     // Save additional user data to Firestore
-  //     const userData = {
-  //       role,
-  //       email,
-  //       name: role === "student" ? name : null,
-  //       matricNumber: role === "student" ? matricNumber : null,
-  //       department: role === "student" ? department : null,
-  //     };
-
-  //     await setDoc(doc(db, "users", user.uid), userData);
-
-  //     toast.addToast("Account created successfully", "success");
-
   const handleSignUp = async () => {
     if (
       !role ||
@@ -105,12 +71,12 @@ const SignUp = () => {
       toast.addToast("Please fill in all fields", "error");
       return;
     }
-  
+
     if (password !== confirmPassword) {
       toast.addToast("Passwords do not match", "error");
       return;
     }
-  
+
     try {
       setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(
@@ -119,23 +85,18 @@ const SignUp = () => {
         password
       );
       const user = userCredential.user;
-  
-      // Update the user's display name
       await updateProfile(user, {
-        displayName: role === "student" ? name : email.split('@')[0] // Use email username for admin
+        displayName: role === "student" ? name : email.split("@")[0],
       });
-  
-      // Save additional user data to Firestore
       const userData = {
         role,
         email,
-        name: role === "student" ? name : email.split('@')[0], // Use email username for admin
+        name: role === "student" ? name : email.split("@")[0],
         matricNumber: role === "student" ? matricNumber : null,
         department: role === "student" ? department : null,
       };
-  
       await setDoc(doc(db, "users", user.uid), userData);
-  
+
       toast.addToast("Account created successfully", "success");
 
       // Redirect based on role
@@ -192,7 +153,6 @@ const SignUp = () => {
               <input
                 className="form-input"
                 type="text"
-             
                 placeholder="Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -204,7 +164,6 @@ const SignUp = () => {
                 className="form-input"
                 type="text"
                 placeholder="Matric Number"
-               
                 value={matricNumber}
                 onChange={(e) => setMatricNumber(e.target.value)}
                 disabled={loading}
@@ -216,7 +175,6 @@ const SignUp = () => {
                 type="text"
                 placeholder="Department"
                 value={department}
-          
                 onChange={(e) => setDepartment(e.target.value)}
                 disabled={loading}
               />
@@ -231,7 +189,6 @@ const SignUp = () => {
                 className="form-input"
                 type="email"
                 placeholder="Email"
-
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}
@@ -243,7 +200,6 @@ const SignUp = () => {
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
                 value={password}
-             
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
               />
@@ -262,7 +218,6 @@ const SignUp = () => {
                 type={showPassword ? "text" : "password"}
                 placeholder="Confirm Password"
                 value={confirmPassword}
-         
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
               />

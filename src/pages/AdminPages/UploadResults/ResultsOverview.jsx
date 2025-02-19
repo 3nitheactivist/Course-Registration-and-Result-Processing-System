@@ -15,7 +15,7 @@
 //   Divider,
 //   Input,
 //   InputNumber,
-//   Form
+//   Form,
 // } from "antd";
 // import { motion } from "framer-motion";
 // import {
@@ -30,11 +30,14 @@
 //   query,
 //   where,
 //   getDocs,
+//   orderBy,
 //   doc,
-//   updateDoc
+//   updateDoc,
 // } from "firebase/firestore";
 // import { db } from "../../../firebase/firebaseConfig";
 // import { useNavigate } from "react-router-dom";
+// import { getAuth } from "firebase/auth";
+// import { jsPDF } from "jspdf";
 
 // const { Column } = Table;
 // const { Title, Text, Paragraph } = Typography;
@@ -60,6 +63,8 @@
 //   const [editData, setEditData] = useState({});
 
 //   const navigate = useNavigate();
+//   const auth = getAuth();
+//   const currentUser = auth.currentUser;
 
 //   // Initial data fetch
 //   useEffect(() => {
@@ -71,7 +76,6 @@
 //         ]);
 //         setCourses(coursesData);
 //         setStudents(studentsData);
-//         await fetchResults();
 //       } catch (error) {
 //         console.error("Error fetching data:", error);
 //       } finally {
@@ -80,6 +84,13 @@
 //     };
 //     fetchData();
 //   }, []);
+
+//   // Fetch results whenever selectedCourse or selectedSemester changes
+//   useEffect(() => {
+//     if (selectedSemester) {
+//       fetchResults();
+//     }
+//   }, [selectedCourse, selectedSemester]); // ✅ Triggers re-fetch on state change
 
 //   // Initialize edit form when a result is selected
 //   useEffect(() => {
@@ -96,22 +107,28 @@
 //     }
 //   }, [selectedResult]);
 
-//   // Fetch results based on the selected filters
+//   // Fetch results based on selected filters
 //   const fetchResults = async () => {
 //     setLoading(true);
 //     try {
 //       const resultsRef = collection(db, "results");
 //       let q;
+
 //       if (selectedCourse) {
-//         // Filter by both semester and course
 //         q = query(
 //           resultsRef,
 //           where("semester", "==", selectedSemester),
-//           where("courseId", "==", selectedCourse)
+//           where("courseId", "==", selectedCourse),
+//           where("userId", "==", currentUser.uid),
+//           orderBy("createdAt", "asc")
 //         );
 //       } else {
-//         // Filter only by semester if no course is selected
-//         q = query(resultsRef, where("semester", "==", selectedSemester));
+//         q = query(
+//           resultsRef,
+//           where("semester", "==", selectedSemester),
+//           where("userId", "==", currentUser.uid),
+//           orderBy("createdAt", "asc")
+//         );
 //       }
 
 //       const snapshot = await getDocs(q);
@@ -144,19 +161,21 @@
 //     }
 //   };
 
-//   // Helper functions to fetch courses and students
+//   // Helper function to fetch courses, ordered by createdAt ascending
 //   const fetchCourses = async () => {
 //     const coursesRef = collection(db, "courses");
-//     const snapshot = await getDocs(coursesRef);
+//     const q = query(coursesRef, orderBy("createdAt", "asc"),  where("userId", "==", currentUser.uid),);
+//     const snapshot = await getDocs(q);
 //     return snapshot.docs.map((doc) => ({
 //       id: doc.id,
 //       ...doc.data(),
 //     }));
 //   };
 
+//   // Helper function to fetch students (order is not critical here)
 //   const fetchStudents = async () => {
 //     const studentsRef = collection(db, "students");
-//     const snapshot = await getDocs(studentsRef);
+//     const snapshot = await getDocs(studentsRef,  where("userId", "==", currentUser.uid),);
 //     return snapshot.docs.map((doc) => ({
 //       id: doc.id,
 //       ...doc.data(),
@@ -185,7 +204,55 @@
 
 //   // Simulate transcript download (integrate your PDF logic here)
 //   const downloadTranscript = () => {
-//     console.log("Downloading transcript for:", selectedResult.studentId);
+//     if (!selectedResult) return;
+
+//     // Retrieve student and course details
+//     const student = students.find((s) => s.id === selectedResult.studentId);
+//     const course = courses.find((c) => c.id === selectedResult.courseId);
+
+//     const doc = new jsPDF();
+
+//     // Add title
+//     doc.setFontSize(18);
+//     doc.text("Transcript", 105, 20, { align: "center" });
+
+//     // Set font size for details
+//     doc.setFontSize(12);
+//     let y = 40; // starting y position
+
+//     if (student) {
+//       doc.text(`Student Name: ${student.name}`, 10, y);
+//       y += 10;
+//       doc.text(`Matric Number: ${student.matricNumber}`, 10, y);
+//       y += 10;
+//     }
+
+//     if (course) {
+//       doc.text(`Course: ${course.courseCode} - ${course.courseTitle}`, 10, y);
+//       y += 10;
+//     }
+
+//     doc.text(
+//       `Continuous Assessment: ${selectedResult.continuousAssessment}`,
+//       10,
+//       y
+//     );
+//     y += 10;
+//     doc.text(`Exam Score: ${selectedResult.examScore}`, 10, y);
+//     y += 10;
+//     doc.text(`Total Score: ${selectedResult.totalScore}`, 10, y);
+//     y += 10;
+//     doc.text(`Grade: ${selectedResult.grade}`, 10, y);
+//     y += 10;
+//     doc.text(`GPA: ${selectedResult.gpa}`, 10, y);
+//     y += 10;
+//     doc.text(`Description: ${selectedResult.description}`, 10, y);
+
+//     // Save the PDF with a filename based on the student's matric number
+//     const fileName = student
+//       ? `transcript-${student.matricNumber}.pdf`
+//       : "transcript.pdf";
+//     doc.save(fileName);
 //   };
 
 //   // Filter results based on the search query (by student name or matric number)
@@ -481,12 +548,16 @@
 //               <div>
 //                 <Text type="secondary">Student</Text>
 //                 <Title level={5}>
-//                   {students.find((s) => s.id === selectedResult.studentId)
-//                     ?.name}
+//                   {
+//                     students.find((s) => s.id === selectedResult.studentId)
+//                       ?.name
+//                   }
 //                 </Title>
 //                 <Text>
-//                   {students.find((s) => s.id === selectedResult.studentId)
-//                     ?.matricNumber}
+//                   {
+//                     students.find((s) => s.id === selectedResult.studentId)
+//                       ?.matricNumber
+//                   }
 //                 </Text>
 //               </div>
 
@@ -495,12 +566,16 @@
 //               <div>
 //                 <Text type="secondary">Course</Text>
 //                 <Title level={5}>
-//                   {courses.find((c) => c.id === selectedResult.courseId)
-//                     ?.courseTitle}
+//                   {
+//                     courses.find((c) => c.id === selectedResult.courseId)
+//                       ?.courseTitle
+//                   }
 //                 </Title>
 //                 <Text>
-//                   {courses.find((c) => c.id === selectedResult.courseId)
-//                     ?.courseCode}
+//                   {
+//                     courses.find((c) => c.id === selectedResult.courseId)
+//                       ?.courseCode
+//                   }
 //                 </Text>
 //               </div>
 
@@ -562,7 +637,10 @@
 //                     <Input.TextArea
 //                       value={editData.description}
 //                       onChange={(e) =>
-//                         setEditData({ ...editData, description: e.target.value })
+//                         setEditData({
+//                           ...editData,
+//                           description: e.target.value,
+//                         })
 //                       }
 //                     />
 //                   </Form.Item>
@@ -570,9 +648,7 @@
 //                     <Button type="primary" onClick={saveEdits}>
 //                       Save
 //                     </Button>
-//                     <Button onClick={() => setIsEditing(false)}>
-//                       Cancel
-//                     </Button>
+//                     <Button onClick={() => setIsEditing(false)}>Cancel</Button>
 //                   </Space>
 //                 </Form>
 //               ) : (
@@ -663,7 +739,6 @@
 
 // export default ResultsOverview;
 
-
 import React, { useState, useEffect } from "react";
 import AdminLayout from "../AdminLayout";
 import {
@@ -681,7 +756,7 @@ import {
   Divider,
   Input,
   InputNumber,
-  Form
+  Form,
 } from "antd";
 import { motion } from "framer-motion";
 import {
@@ -698,10 +773,12 @@ import {
   getDocs,
   orderBy,
   doc,
-  updateDoc
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../../../firebase/firebaseConfig";
 import { useNavigate } from "react-router-dom";
+import { getAuth } from "firebase/auth";
+import { jsPDF } from "jspdf";
 
 const { Column } = Table;
 const { Title, Text, Paragraph } = Typography;
@@ -727,8 +804,10 @@ const ResultsOverview = () => {
   const [editData, setEditData] = useState({});
 
   const navigate = useNavigate();
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
 
-  // Initial data fetch
+  // Initial data fetch for courses and students (filtered by currentUser.uid)
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -738,15 +817,21 @@ const ResultsOverview = () => {
         ]);
         setCourses(coursesData);
         setStudents(studentsData);
-        await fetchResults();
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, []);
+    if (currentUser) fetchData();
+  }, [currentUser]);
+
+  // Fetch results whenever selectedCourse or selectedSemester changes
+  useEffect(() => {
+    if (selectedSemester && currentUser) {
+      fetchResults();
+    }
+  }, [selectedCourse, selectedSemester, currentUser]);
 
   // Initialize edit form when a result is selected
   useEffect(() => {
@@ -763,25 +848,25 @@ const ResultsOverview = () => {
     }
   }, [selectedResult]);
 
-  // Fetch results based on the selected filters, ordered by createdAt ascending
+  // Fetch results based on selected filters and currentUser (admin)
   const fetchResults = async () => {
     setLoading(true);
     try {
       const resultsRef = collection(db, "results");
       let q;
       if (selectedCourse) {
-        // Filter by both semester and course
         q = query(
           resultsRef,
           where("semester", "==", selectedSemester),
           where("courseId", "==", selectedCourse),
+          where("userId", "==", currentUser.uid),
           orderBy("createdAt", "asc")
         );
       } else {
-        // Filter only by semester if no course is selected
         q = query(
           resultsRef,
           where("semester", "==", selectedSemester),
+          where("userId", "==", currentUser.uid),
           orderBy("createdAt", "asc")
         );
       }
@@ -816,10 +901,14 @@ const ResultsOverview = () => {
     }
   };
 
-  // Helper function to fetch courses, ordered by createdAt ascending
+  // Helper function to fetch courses created by the current user (admin)
   const fetchCourses = async () => {
     const coursesRef = collection(db, "courses");
-    const q = query(coursesRef, orderBy("createdAt", "asc"));
+    const q = query(
+      coursesRef,
+      where("userId", "==", currentUser.uid),
+      orderBy("createdAt", "asc")
+    );
     const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => ({
       id: doc.id,
@@ -827,10 +916,11 @@ const ResultsOverview = () => {
     }));
   };
 
-  // Helper function to fetch students (order is not critical here)
+  // Helper function to fetch students created by the current user (admin)
   const fetchStudents = async () => {
     const studentsRef = collection(db, "students");
-    const snapshot = await getDocs(studentsRef);
+    const q = query(studentsRef, where("userId", "==", currentUser.uid));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
@@ -857,9 +947,57 @@ const ResultsOverview = () => {
     }
   };
 
-  // Simulate transcript download (integrate your PDF logic here)
+  // Generate and download transcript PDF using jsPDF
   const downloadTranscript = () => {
-    console.log("Downloading transcript for:", selectedResult.studentId);
+    if (!selectedResult) return;
+
+    // Retrieve student and course details
+    const student = students.find((s) => s.id === selectedResult.studentId);
+    const course = courses.find((c) => c.id === selectedResult.courseId);
+
+    const doc = new jsPDF();
+
+    // Add title
+    doc.setFontSize(18);
+    doc.text("Transcript", 105, 20, { align: "center" });
+
+    // Set font size for details
+    doc.setFontSize(12);
+    let y = 40; // starting y position
+
+    if (student) {
+      doc.text(`Student Name: ${student.name}`, 10, y);
+      y += 10;
+      doc.text(`Matric Number: ${student.matricNumber}`, 10, y);
+      y += 10;
+    }
+
+    if (course) {
+      doc.text(`Course: ${course.courseCode} - ${course.courseTitle}`, 10, y);
+      y += 10;
+    }
+
+    doc.text(
+      `Continuous Assessment: ${selectedResult.continuousAssessment}`,
+      10,
+      y
+    );
+    y += 10;
+    doc.text(`Exam Score: ${selectedResult.examScore}`, 10, y);
+    y += 10;
+    doc.text(`Total Score: ${selectedResult.totalScore}`, 10, y);
+    y += 10;
+    doc.text(`Grade: ${selectedResult.grade}`, 10, y);
+    y += 10;
+    doc.text(`GPA: ${selectedResult.gpa}`, 10, y);
+    y += 10;
+    doc.text(`Description: ${selectedResult.description}`, 10, y);
+
+    // Save the PDF with a filename based on the student's matric number
+    const fileName = student
+      ? `transcript-${student.matricNumber}.pdf`
+      : "transcript.pdf";
+    doc.save(fileName);
   };
 
   // Filter results based on the search query (by student name or matric number)
@@ -963,7 +1101,7 @@ const ResultsOverview = () => {
     },
   ];
 
-  // (Unchanged) Grade distribution data for the chart
+  // Grade distribution data for the chart
   const getGradeDistributionData = () => {
     const distribution = results.reduce((acc, curr) => {
       acc[curr.grade] = (acc[curr.grade] || 0) + 1;
@@ -1004,7 +1142,7 @@ const ResultsOverview = () => {
                 placeholder="Select Course"
                 onChange={(value) => {
                   setSelectedCourse(value);
-                  fetchResults();
+                  // No need to call fetchResults() here; useEffect will trigger it.
                 }}
                 allowClear
               >
@@ -1020,7 +1158,7 @@ const ResultsOverview = () => {
                 value={selectedSemester}
                 onChange={(value) => {
                   setSelectedSemester(value);
-                  fetchResults();
+                  // useEffect triggers fetchResults() when state changes.
                 }}
               >
                 <Option value="FirstSemester">First Semester</Option>
@@ -1155,8 +1293,7 @@ const ResultsOverview = () => {
               <div>
                 <Text type="secondary">Student</Text>
                 <Title level={5}>
-                  {students.find((s) => s.id === selectedResult.studentId)
-                    ?.name}
+                  {students.find((s) => s.id === selectedResult.studentId)?.name}
                 </Title>
                 <Text>
                   {students.find((s) => s.id === selectedResult.studentId)
@@ -1236,7 +1373,10 @@ const ResultsOverview = () => {
                     <Input.TextArea
                       value={editData.description}
                       onChange={(e) =>
-                        setEditData({ ...editData, description: e.target.value })
+                        setEditData({
+                          ...editData,
+                          description: e.target.value,
+                        })
                       }
                     />
                   </Form.Item>
@@ -1244,9 +1384,7 @@ const ResultsOverview = () => {
                     <Button type="primary" onClick={saveEdits}>
                       Save
                     </Button>
-                    <Button onClick={() => setIsEditing(false)}>
-                      Cancel
-                    </Button>
+                    <Button onClick={() => setIsEditing(false)}>Cancel</Button>
                   </Space>
                 </Form>
               ) : (

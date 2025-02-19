@@ -23,14 +23,16 @@
 //   doc,
 //   writeBatch,
 //   getDocs,
+//   query,
+//   where,
 // } from "firebase/firestore";
-// // import { Navigate } from "react-router-dom";
 
 // const { Title } = Typography;
 // const { TabPane } = Tabs;
+// const { Option } = Select;
 
 // const UploadResults = () => {
-//   const [courses, setCourses] = useState([]); // All courses from Firestore
+//   const [courses, setCourses] = useState([]); // All courses (will be filtered by semester)
 //   const [students, setStudents] = useState([]); // All students from Firestore
 //   const [selectedStudent, setSelectedStudent] = useState(null); // Currently selected student (includes registered courses)
 //   const [uploadingBulk, setUploadingBulk] = useState(false);
@@ -57,10 +59,12 @@
 
 //   useEffect(() => {
 //     testFirestore();
-//     fetchCourses();
+//     // Initially, you could load all courses or leave courses empty until a semester is selected.
+//     fetchCourses(); 
 //     fetchStudents();
 //   }, []);
 
+//   // Fetch all courses (used on initial load if needed)
 //   const fetchCourses = async () => {
 //     try {
 //       const coursesColRef = collection(db, "courses");
@@ -73,6 +77,23 @@
 //     } catch (error) {
 //       showAlert("Failed to load courses", "error");
 //       console.error("Courses fetch error:", error);
+//     }
+//   };
+
+//   // New: Fetch courses for the selected semester only.
+//   const fetchCoursesBySemester = async (semester) => {
+//     try {
+//       const coursesColRef = collection(db, "courses");
+//       const q = query(coursesColRef, where("semester", "==", semester));
+//       const snapshot = await getDocs(q);
+//       const coursesData = snapshot.docs.map((doc) => ({
+//         id: doc.id,
+//         ...doc.data(),
+//       }));
+//       setCourses(coursesData);
+//     } catch (error) {
+//       showAlert("Failed to load courses for the selected semester", "error");
+//       console.error("fetchCoursesBySemester error:", error);
 //     }
 //   };
 
@@ -92,7 +113,6 @@
 //   };
 
 //   // When a student is selected, store the full student document in state.
-//   // (Each student document should have a "courses" field that is an array of course IDs.)
 //   const handleStudentChange = (studentId) => {
 //     form.setFieldsValue({ studentId });
 //     const student = students.find((s) => s.id === studentId);
@@ -101,30 +121,85 @@
 //     form.setFieldsValue({ results: {} });
 //   };
 
+//   // Handler for when the semester selection changes.
+//   const handleSemesterChange = (semesterValue) => {
+//     form.setFieldsValue({ semester: semesterValue });
+//     fetchCoursesBySemester(semesterValue);
+//   };
+
 //   // onFinish for the Single Upload tab.
-//   // It loops over each course registered for the selected student and saves the corresponding result.
+//   // const onFinishSingle = async (values) => {
+//   //   try {
+//   //     // Expected values structure:
+//   //     // {
+//   //     //   studentId,
+//   //     //   semester,
+//   //     //   results: { courseId1: { continuousAssessment, examScore }, ... }
+//   //     // }
+//   //     const { studentId, semester, results } = values;
+//   //     if (!studentId || !semester || !results) {
+//   //       throw new Error("Please fill in all required fields");
+//   //     }
+//   //     const studentCourses = selectedStudent?.courses || [];
+//   //     if (studentCourses.length === 0) {
+//   //       throw new Error("Selected student has no registered courses");
+//   //     }
+//   //     const batch = writeBatch(db);
+//   //     studentCourses.forEach((courseId) => {
+//   //       const scores = results[courseId];
+//   //       if (
+//   //         !scores ||
+//   //         scores.continuousAssessment === undefined ||
+//   //         scores.examScore === undefined
+//   //       ) {
+//   //         throw new Error(`Scores for course ${courseId} are missing`);
+//   //       }
+//   //       const continuousAssessment = Number(scores.continuousAssessment);
+//   //       const examScore = Number(scores.examScore);
+//   //       const totalScore = continuousAssessment + examScore;
+//   //       const { grade, gpa, description } = calculateGradeAndGPA(totalScore);
+//   //       const resultDoc = {
+//   //         studentId,
+//   //         courseId,
+//   //         continuousAssessment,
+//   //         examScore,
+//   //         totalScore,
+//   //         grade,
+//   //         gpa,
+//   //         description,
+//   //         semester,
+//   //         createdAt: new Date(),
+//   //       };
+//   //       const resultDocRef = doc(collection(db, "results"));
+//   //       batch.set(resultDocRef, resultDoc);
+//   //     });
+//   //     await batch.commit();
+//   //     showAlert("Results uploaded successfully!");
+//   //     form.resetFields();
+//   //     setSelectedStudent(null);
+//   //   } catch (error) {
+//   //     console.error("Error in onFinishSingle:", error);
+//   //     showAlert(error.message || "Failed to upload results", "error");
+//   //   }
+//   // };
 //   const onFinishSingle = async (values) => {
 //     try {
-//       // Expected values structure:
-//       // {
-//       //   studentId,
-//       //   semester,
-//       //   results: {
-//       //      courseId1: { continuousAssessment, examScore },
-//       //      courseId2: { continuousAssessment, examScore },
-//       //      ...
-//       //   }
-//       // }
 //       const { studentId, semester, results } = values;
 //       if (!studentId || !semester || !results) {
 //         throw new Error("Please fill in all required fields");
 //       }
-//       const studentCourses = selectedStudent?.courses || [];
-//       if (studentCourses.length === 0) {
-//         throw new Error("Selected student has no registered courses");
+      
+//       // Filter student's courses to only include those that are in the filtered courses list (for the selected semester)
+//       const filteredStudentCourses = selectedStudent?.courses?.filter(courseId =>
+//         courses.some((course) => course.id === courseId)
+//       );
+  
+//       if (!filteredStudentCourses || filteredStudentCourses.length === 0) {
+//         throw new Error("No registered courses found for the selected semester");
 //       }
+      
 //       const batch = writeBatch(db);
-//       studentCourses.forEach((courseId) => {
+//       filteredStudentCourses.forEach((courseId) => {
 //         const scores = results[courseId];
 //         if (
 //           !scores ||
@@ -152,6 +227,7 @@
 //         const resultDocRef = doc(collection(db, "results"));
 //         batch.set(resultDocRef, resultDoc);
 //       });
+      
 //       await batch.commit();
 //       showAlert("Results uploaded successfully!");
 //       form.resetFields();
@@ -161,6 +237,7 @@
 //       showAlert(error.message || "Failed to upload results", "error");
 //     }
 //   };
+  
 
 //   // Bulk CSV Upload remains similar to before.
 //   const handleCSVUpload = (file) => {
@@ -229,7 +306,7 @@
 //           </Breadcrumb.Item>
 //           <Breadcrumb.Item>Upload Results</Breadcrumb.Item>
 //         </Breadcrumb>
-//         <hr style={{marginTop: "-5px"}}/>
+//         <hr style={{ marginTop: "-5px" }} />
 //         <Title level={4}>Upload Results</Title>
 
 //         {/* Alert Section */}
@@ -254,7 +331,7 @@
 //                 console.log("Form validation failed:", errorInfo);
 //               }}
 //             >
-//               {/* Student Selection (First) */}
+//               {/* Student Selection */}
 //               <Form.Item
 //                 name="studentId"
 //                 label="Student"
@@ -267,9 +344,9 @@
 //                   onChange={handleStudentChange}
 //                 >
 //                   {students.map((student) => (
-//                     <Select.Option key={student.id} value={student.id}>
+//                     <Option key={student.id} value={student.id}>
 //                       {`${student.matricNumber} - ${student.name}`}
-//                     </Select.Option>
+//                     </Option>
 //                   ))}
 //                 </Select>
 //               </Form.Item>
@@ -282,13 +359,12 @@
 //                   { required: true, message: "Please select a semester" },
 //                 ]}
 //               >
-//                 <Select placeholder="Select Semester">
-//                   <Select.Option value="FirstSemester">
-//                     First Semester
-//                   </Select.Option>
-//                   <Select.Option value="SecondSemester">
-//                     Second Semester
-//                   </Select.Option>
+//                 <Select
+//                   placeholder="Select Semester"
+//                   onChange={handleSemesterChange}
+//                 >
+//                   <Option value="FirstSemester">First Semester</Option>
+//                   <Option value="SecondSemester">Second Semester</Option>
 //                 </Select>
 //               </Form.Item>
 
@@ -297,9 +373,11 @@
 //                 selectedStudent.courses &&
 //                 selectedStudent.courses.length > 0 && (
 //                   <>
-//                     <Title level={5}>Enter Scores for Registered Courses</Title>
+//                     <Title level={5}>
+//                       Enter Scores for Registered Courses
+//                     </Title>
 //                     {selectedStudent.courses.map((courseId) => {
-//                       // Find full course details from the preloaded courses list
+//                       // Find full course details from the (filtered) courses list
 //                       const course = courses.find((c) => c.id === courseId);
 //                       if (!course) return null;
 //                       return (
@@ -330,11 +408,7 @@
 //                               },
 //                             ]}
 //                           >
-//                             <InputNumber
-//                               min={0}
-//                               max={40}
-//                               style={{ width: "100%" }}
-//                             />
+//                             <InputNumber min={0} max={40} style={{ width: "100%" }} />
 //                           </Form.Item>
 //                           <Form.Item
 //                             name={["results", courseId, "examScore"]}
@@ -352,11 +426,7 @@
 //                               },
 //                             ]}
 //                           >
-//                             <InputNumber
-//                               min={0}
-//                               max={60}
-//                               style={{ width: "100%" }}
-//                             />
+//                             <InputNumber min={0} max={60} style={{ width: "100%" }} />
 //                           </Form.Item>
 //                         </div>
 //                       );
@@ -416,7 +486,6 @@
 
 // export default UploadResults;
 
-
 import React, { useState, useEffect } from "react";
 import AdminLayout from "../AdminLayout";
 import {
@@ -445,19 +514,22 @@ import {
   query,
   where,
 } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
 
 const { Title } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 
 const UploadResults = () => {
-  const [courses, setCourses] = useState([]); // All courses (will be filtered by semester)
+  const [courses, setCourses] = useState([]); // All courses (filtered by semester)
   const [students, setStudents] = useState([]); // All students from Firestore
-  const [selectedStudent, setSelectedStudent] = useState(null); // Currently selected student (includes registered courses)
+  const [selectedStudent, setSelectedStudent] = useState(null); // Currently selected student (with registered courses)
   const [uploadingBulk, setUploadingBulk] = useState(false);
   const [alertState, setAlertState] = useState(null);
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
 
   // Quick test to ensure Firestore is connected (optional)
   const testFirestore = async () => {
@@ -478,16 +550,19 @@ const UploadResults = () => {
 
   useEffect(() => {
     testFirestore();
-    // Initially, you could load all courses or leave courses empty until a semester is selected.
-    fetchCourses(); 
-    fetchStudents();
-  }, []);
+    // Initially load courses and students created by this admin
+    if (currentUser) {
+      fetchCourses();
+      fetchStudents();
+    }
+  }, [currentUser]);
 
-  // Fetch all courses (used on initial load if needed)
+  // Fetch all courses for the current admin
   const fetchCourses = async () => {
     try {
       const coursesColRef = collection(db, "courses");
-      const snapshot = await getDocs(coursesColRef);
+      const q = query(coursesColRef, where("userId", "==", currentUser.uid));
+      const snapshot = await getDocs(q);
       const coursesData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -499,11 +574,15 @@ const UploadResults = () => {
     }
   };
 
-  // New: Fetch courses for the selected semester only.
+  // Fetch courses for the selected semester for the current admin
   const fetchCoursesBySemester = async (semester) => {
     try {
       const coursesColRef = collection(db, "courses");
-      const q = query(coursesColRef, where("semester", "==", semester));
+      const q = query(
+        coursesColRef,
+        where("semester", "==", semester),
+        where("userId", "==", currentUser.uid)
+      );
       const snapshot = await getDocs(q);
       const coursesData = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -516,10 +595,12 @@ const UploadResults = () => {
     }
   };
 
+  // Fetch all students for the current admin
   const fetchStudents = async () => {
     try {
       const studentsColRef = collection(db, "students");
-      const snapshot = await getDocs(studentsColRef);
+      const q = query(studentsColRef, where("userId", "==", currentUser.uid));
+      const snapshot = await getDocs(q);
       const studentsData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
@@ -547,60 +628,6 @@ const UploadResults = () => {
   };
 
   // onFinish for the Single Upload tab.
-  // const onFinishSingle = async (values) => {
-  //   try {
-  //     // Expected values structure:
-  //     // {
-  //     //   studentId,
-  //     //   semester,
-  //     //   results: { courseId1: { continuousAssessment, examScore }, ... }
-  //     // }
-  //     const { studentId, semester, results } = values;
-  //     if (!studentId || !semester || !results) {
-  //       throw new Error("Please fill in all required fields");
-  //     }
-  //     const studentCourses = selectedStudent?.courses || [];
-  //     if (studentCourses.length === 0) {
-  //       throw new Error("Selected student has no registered courses");
-  //     }
-  //     const batch = writeBatch(db);
-  //     studentCourses.forEach((courseId) => {
-  //       const scores = results[courseId];
-  //       if (
-  //         !scores ||
-  //         scores.continuousAssessment === undefined ||
-  //         scores.examScore === undefined
-  //       ) {
-  //         throw new Error(`Scores for course ${courseId} are missing`);
-  //       }
-  //       const continuousAssessment = Number(scores.continuousAssessment);
-  //       const examScore = Number(scores.examScore);
-  //       const totalScore = continuousAssessment + examScore;
-  //       const { grade, gpa, description } = calculateGradeAndGPA(totalScore);
-  //       const resultDoc = {
-  //         studentId,
-  //         courseId,
-  //         continuousAssessment,
-  //         examScore,
-  //         totalScore,
-  //         grade,
-  //         gpa,
-  //         description,
-  //         semester,
-  //         createdAt: new Date(),
-  //       };
-  //       const resultDocRef = doc(collection(db, "results"));
-  //       batch.set(resultDocRef, resultDoc);
-  //     });
-  //     await batch.commit();
-  //     showAlert("Results uploaded successfully!");
-  //     form.resetFields();
-  //     setSelectedStudent(null);
-  //   } catch (error) {
-  //     console.error("Error in onFinishSingle:", error);
-  //     showAlert(error.message || "Failed to upload results", "error");
-  //   }
-  // };
   const onFinishSingle = async (values) => {
     try {
       const { studentId, semester, results } = values;
@@ -608,7 +635,7 @@ const UploadResults = () => {
         throw new Error("Please fill in all required fields");
       }
       
-      // Filter student's courses to only include those that are in the filtered courses list (for the selected semester)
+      // Filter the student's registered courses to only those in the filtered courses list (for the selected semester)
       const filteredStudentCourses = selectedStudent?.courses?.filter(courseId =>
         courses.some((course) => course.id === courseId)
       );
@@ -642,6 +669,7 @@ const UploadResults = () => {
           description,
           semester,
           createdAt: new Date(),
+          userId: currentUser.uid, // tie result to the current admin
         };
         const resultDocRef = doc(collection(db, "results"));
         batch.set(resultDocRef, resultDoc);
@@ -656,7 +684,6 @@ const UploadResults = () => {
       showAlert(error.message || "Failed to upload results", "error");
     }
   };
-  
 
   // Bulk CSV Upload remains similar to before.
   const handleCSVUpload = (file) => {
@@ -687,6 +714,7 @@ const UploadResults = () => {
                 description,
                 semester: record.semester,
                 createdAt: new Date(),
+                userId: currentUser.uid, // tie result to the current admin
               });
             } catch (error) {
               errors.push(
@@ -796,7 +824,7 @@ const UploadResults = () => {
                       Enter Scores for Registered Courses
                     </Title>
                     {selectedStudent.courses.map((courseId) => {
-                      // Find full course details from the (filtered) courses list
+                      // Find full course details from the filtered courses list
                       const course = courses.find((c) => c.id === courseId);
                       if (!course) return null;
                       return (
@@ -887,8 +915,7 @@ const UploadResults = () => {
                       <li>Continuous Assessment maximum score: 40</li>
                       <li>Exam maximum score: 60</li>
                       <li>
-                        Semester should be either "FirstSemester" or
-                        "SecondSemester"
+                        Semester should be either "FirstSemester" or "SecondSemester"
                       </li>
                     </ul>
                   </div>

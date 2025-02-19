@@ -114,7 +114,7 @@ const AdminDashboard = () => {
               src={scholarcapScroll}
               alt="scroll"
               style={{
-                height: "250px",
+                // height: "250px",
                 height: "250px",
                 objectFit: "contain",
                 // marginBottom: "40px",

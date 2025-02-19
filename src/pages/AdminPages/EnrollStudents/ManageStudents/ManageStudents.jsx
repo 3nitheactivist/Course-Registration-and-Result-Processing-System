@@ -1,10 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Table, Input, Space, Breadcrumb, Spin, message, Skeleton } from "antd";
-import { EyeOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
+import {
+  Table,
+  Input,
+  Space,
+  Breadcrumb,
+  Skeleton,
+  message,
+} from "antd";
+import {
+  EyeOutlined,
+  PlusOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { db } from "../../../../firebase/firebaseConfig";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  where,
+} from "firebase/firestore";
 import AdminLayout from "../../AdminLayout";
+import { getAuth } from "firebase/auth";
+// import "./ViewCourse.css";
 
 const ManageStudents = () => {
   const navigate = useNavigate();
@@ -13,9 +32,17 @@ const ManageStudents = () => {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
 
-  // ✅ Real-time listener for students, sorted by `createdAt`
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
+  // Real-time listener for students created by the current admin, sorted by createdAt descending
   useEffect(() => {
-    const q = query(collection(db, "students"), orderBy("createdAt", "desc"));
+    if (!currentUser) return;
+    const q = query(
+      collection(db, "students"),
+      where("userId", "==", currentUser.uid),
+      orderBy("createdAt", "desc")
+    );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const studentList = snapshot.docs.map((doc) => ({
         key: doc.id,
@@ -26,23 +53,24 @@ const ManageStudents = () => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
-  // ✅ Search function
+  // Search function
   const handleSearch = (e) => {
     setSearchText(e.target.value.toLowerCase());
   };
 
-  // ✅ Filter students based on search input
-  const filteredStudents = students.filter(
-    (student) =>
-      student.name.toLowerCase().includes(searchText) ||
-      student.matricNumber.toLowerCase().includes(searchText) ||
-      student.email.toLowerCase().includes(searchText) ||
-      student.department.toLowerCase().includes(searchText)
-  );
+  // Filter students based on search input
+  const filteredStudents = students.filter((student) => {
+    return (
+      (student.name || "").toLowerCase().includes(searchText) ||
+      (student.matricNumber || "").toLowerCase().includes(searchText) ||
+      (student.email || "").toLowerCase().includes(searchText) ||
+      (student.department || "").toLowerCase().includes(searchText)
+    );
+  });
 
-  // ✅ Ant Design Table Columns
+  // Table Columns
   const columns = [
     {
       title: "Name",
@@ -62,7 +90,7 @@ const ManageStudents = () => {
 
   return (
     <AdminLayout>
-      {/* ✅ Breadcrumb Navigation (Keeps Active State) */}
+      {/* Breadcrumb Navigation */}
       <Breadcrumb style={{ marginBottom: "16px", cursor: "pointer" }}>
         <Breadcrumb.Item onClick={() => navigate("/admin/students")}>
           Manage Students
@@ -103,13 +131,13 @@ const ManageStudents = () => {
             </div>
           </div>
 
-          {/* ✅ Table Section */}
+          {/* Table Section */}
           <div className="manage-course-table">
             <div className="manage-course-table-title">
               <h2>Available Students</h2>
             </div>
 
-            {/* ✅ Search Bar */}
+            {/* Search Bar */}
             <Space style={{ marginBottom: 16 }}>
               <Input
                 placeholder="Search students..."
@@ -119,9 +147,9 @@ const ManageStudents = () => {
               />
             </Space>
 
-            {/* ✅ Show Spinner while loading */}
+            {/* Show Skeleton while loading */}
             {loading ? (
-              <Skeleton active paragraph={{rows: 3}} />
+              <Skeleton active paragraph={{ rows: 3 }} />
             ) : (
               <Table
                 columns={columns}
