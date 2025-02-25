@@ -7,7 +7,7 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { useAuth } from "../../../context/AuthContext";
-import { Link, useNavigate } from "react-router-dom"; // Import useNavigate
+import { useNavigate } from "react-router-dom";
 import { useToast } from "../../../context/ToastContext";
 
 // SVG icons as components
@@ -46,7 +46,6 @@ const EyeOffIcon = () => (
 );
 
 const Login = () => {
-  const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,22 +54,33 @@ const Login = () => {
   const toast = useToast();
   const { login } = useAuth();
   const auth = getAuth();
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
-  // Load remembered email and role
+  // Load remembered email from localStorage (if any)
   useEffect(() => {
     const rememberedEmail = localStorage.getItem("rememberedEmail");
-    const rememberedRole = localStorage.getItem("rememberedRole");
-    if (rememberedEmail && rememberedRole) {
+    if (rememberedEmail) {
       setEmail(rememberedEmail);
-      setRole(rememberedRole);
       setRememberMe(true);
     }
   }, []);
 
   const handleLogin = async () => {
-    if (!role || !email || !password) {
+    if (!email || !password) {
       toast.addToast("Please fill in all fields", "error");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast.addToast("Please enter a valid email address", "error");
+      return;
+    }
+
+    // Validate password (example: at least 6 characters)
+    if (password.length < 6) {
+      toast.addToast("Password must be at least 6 characters long", "error");
       return;
     }
 
@@ -82,23 +92,16 @@ const Login = () => {
       // Handle remember me
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", email);
-        localStorage.setItem("rememberedRole", role);
       } else {
         localStorage.removeItem("rememberedEmail");
-        localStorage.removeItem("rememberedRole");
       }
 
       toast.addToast("Login successful", "success");
 
-      // Navigate based on role
-      if (role === "admin") {
-        navigate("/admin/dashboard"); // Replace with your admin route
-      } else if (role === "student") {
-        navigate("/studentDashboard"); // Replace with your student route
-      }
+      // Navigate to the admin dashboard since this is admin login
+      navigate("/admin/dashboard");
     } catch (err) {
       let errorMessage = "An error occurred during login";
-
       switch (err.code) {
         case "auth/invalid-email":
           errorMessage = "Invalid email address";
@@ -112,10 +115,12 @@ const Login = () => {
         case "auth/wrong-password":
           errorMessage = "Incorrect password";
           break;
+        case "auth/invalid-credential":
+          errorMessage = "Incorrect email or password";
+          break;
         default:
           errorMessage = err.message;
       }
-
       toast.addToast(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -140,78 +145,57 @@ const Login = () => {
     <div className="login-container">
       <div className="login-form">
         <div className="form-header">
-          <h2 className="form-title">Log in to your account</h2>
-          <div className="text">
-            <h1>Select your role</h1>
-          </div>
+          <h2 className="form-title">Admin Login</h2>
         </div>
 
         <div className="form-group">
-          <select
-            className="form-select"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
+          <input
+            className="form-input"
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+        <div className="form-group password-input-wrapper">
+          <input
+            className="form-input"
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={loading}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="password-toggle-btn"
             disabled={loading}
           >
-            <option value="">Select Role</option>
-            <option value="student">Student</option>
-            <option value="admin">Admin</option>
-          </select>
+            {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+          </button>
         </div>
 
-        {role && (
-          <>
-            <div className="form-group">
-              <input
-                className="form-input"
-                
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
-              />
-            </div>
-            <div className="form-group password-input-wrapper">
-              <input
-                className="form-input"
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="password-toggle-btn"
-                disabled={loading}
-              >
-                {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-              </button>
-            </div>
-
-            <div className="form-options">
-              <label className="remember-me">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  disabled={loading}
-                />
-                <span>Remember me</span>
-              </label>
-              <button
-                type="button"
-                onClick={handlePasswordReset}
-                className="forgot-password"
-                disabled={loading}
-              >
-                Forgot Password?
-              </button>
-            </div>
-          </>
-        )}
+        <div className="form-options">
+          <label className="remember-me">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              disabled={loading}
+            />
+            <span>Remember me</span>
+          </label>
+          <button
+            type="button"
+            onClick={handlePasswordReset}
+            className="forgot-password"
+            disabled={loading}
+          >
+            Forgot Password?
+          </button>
+        </div>
 
         <div className="form-actions">
           <button
@@ -222,9 +206,6 @@ const Login = () => {
           >
             {loading ? <SyncLoader size={10} color="White" /> : "Login"}
           </button>
-        </div>
-        <div className="login-link">
-          Don't have an account? <Link to="/signup">Sign Up</Link>
         </div>
       </div>
     </div>

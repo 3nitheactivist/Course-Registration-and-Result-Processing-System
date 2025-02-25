@@ -22,6 +22,9 @@ import ManageStudents from "./pages/AdminPages/EnrollStudents/ManageStudents/Man
 import ViewStudents from "./pages/AdminPages/EnrollStudents/ViewStudents/ViewStudents";
 import StudentProfile from "./pages/AdminPages/EnrollStudents/ViewStudents/StudentProfile";
 import ResultsOverview from "./pages/AdminPages/UploadResults/ResultsOverview";
+import StudentLogin from "./pages/Authentication/StudentLogin";
+import StudentResults from "./pages/StudentPages/StudentResults/StudentResults";
+import StudentCourses from "./pages/StudentPages/StudentCourses/StudentCourses";
 
 // import AdminLayout from "./pages/AdminPages/AdminLayout";
 
@@ -33,6 +36,40 @@ function App() {
         {/* Use wrapper */}
         <Route path="/signup" element={<SignUp />} />
         <Route path="/login" element={<Login />} />
+        {/* STUDENTS COMPONENTS */}
+        <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/login"
+          element={
+            <ProtectedRoute>
+              <StudentLogin />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/view-results"
+          element={
+            <ProtectedRoute>
+              < StudentResults />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/view-courses"
+          element={
+            <ProtectedRoute>
+              <StudentCourses />
+            </ProtectedRoute>
+          }
+        />
+        {/* ADMIN COMPONENTS */}
         <Route
           path="/admin/dashboard"
           element={
@@ -110,14 +147,6 @@ function App() {
           element={
             <ProtectedRoute>
               <ResultsOverview />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/studentDashboard"
-          element={
-            <ProtectedRoute>
-              <StudentDashboard />
             </ProtectedRoute>
           }
         />

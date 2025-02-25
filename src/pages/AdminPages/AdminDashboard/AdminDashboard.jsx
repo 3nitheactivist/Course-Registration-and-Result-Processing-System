@@ -74,7 +74,6 @@ const AdminDashboard = () => {
             minHeight: "180px",
             position: "relative",
             overflow: "hidden",
-            borderRadius: "24px",
           }}
         >
           {/* Content Container */}

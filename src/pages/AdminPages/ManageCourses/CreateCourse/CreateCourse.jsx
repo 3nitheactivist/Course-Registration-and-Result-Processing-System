@@ -421,7 +421,6 @@
 
 // export default CreateCourse;
 
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth } from "firebase/auth";
@@ -741,11 +740,11 @@ const CreateCourse = () => {
                   </Form.Item>
 
                   <Form.Item
-                    label="Credit Hours"
+                    label="Course Unit"
                     name="creditHours"
                     rules={[{ required: !importEnabled }]}
                   >
-                    <Input placeholder="Enter credit hours" type="number" />
+                    <Input placeholder="Enter course unit" type="number" />
                   </Form.Item>
 
                   <Form.Item
@@ -775,9 +774,19 @@ const CreateCourse = () => {
                       <Form.Item
                         label="Level"
                         name="level"
-                        rules={[{ required: !importEnabled }]}
+                        rules={[
+                          {
+                            required: !importEnabled,
+                            message: "Please select level",
+                          },
+                        ]}
                       >
-                        <Input placeholder="Enter level" />
+                        <Select placeholder="Select level">
+                          <Option value="ND1">ND1</Option>
+                          <Option value="ND2">ND2</Option>
+                          <Option value="HD1">HD1</Option>
+                          <Option value="HD2">HD2</Option>
+                        </Select>
                       </Form.Item>
                     </Col>
                   </Row>

@@ -24,9 +24,12 @@
 //   doc,
 //   updateDoc,
 //   onSnapshot,
+//   query,
+//   where,
 // } from "firebase/firestore";
 // import AdminLayout from "../../AdminLayout";
 // import "./ViewCourse.css";
+// import { getAuth } from "firebase/auth";
 
 // const ViewCourse = () => {
 //   const navigate = useNavigate();
@@ -36,13 +39,19 @@
 //   const [searchText, setSearchText] = useState("");
 //   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 //   const [editingCourse, setEditingCourse] = useState(null);
+//   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+//   const [courseToDelete, setCourseToDelete] = useState([]);
+//   const [isUpdating, setIsUpdating] = useState(false); // state for edit submission loading
 //   const [form] = Form.useForm();
 
-//   useEffect(() => {
-//     // Firestore Real-time Listener
-//     const courseCollection = collection(db, "courses");
+//   const auth = getAuth();
+//   const currentUser = auth.currentUser;
 
-//     const unsubscribe = onSnapshot(courseCollection, (snapshot) => {
+//   useEffect(() => {
+//     if (!currentUser) return;
+//     const courseCollection = collection(db, "courses");
+//     const q = query(courseCollection, where("userId", "==", currentUser.uid));
+//     const unsubscribe = onSnapshot(q, (snapshot) => {
 //       const courseList = snapshot.docs.map((doc) => ({
 //         key: doc.id,
 //         ...doc.data(),
@@ -50,17 +59,13 @@
 //       setCourses(courseList);
 //       setLoading(false);
 //     });
-
-//     // Cleanup subscription on component unmount
 //     return () => unsubscribe();
-//   }, []);
+//   }, [currentUser]);
 
-//   // Search function
 //   const handleSearch = (e) => {
 //     setSearchText(e.target.value.toLowerCase());
 //   };
 
-//   // Filter courses based on search
 //   const filteredCourses = courses.filter((course) => {
 //     return (
 //       (course.courseCode || "").toLowerCase().includes(searchText) ||
@@ -70,64 +75,50 @@
 //     );
 //   });
 
-//   // Handle course deletion
-//   // const handleDelete = async () => {
-//   //   if (selectedRowKeys.length === 0) {
-//   //     message.warning("Please select at least one course to delete!");
-//   //     return;
-//   //   }
+//   const confirmDelete = (courseIds) => {
+//     setCourseToDelete(courseIds);
+//     setIsDeleteModalVisible(true);
+//   };
 
-//   //   setLoading(true);
-//   //   try {
-//   //     await Promise.all(selectedRowKeys.map(async (courseId) => {
-//   //       await deleteDoc(doc(db, "courses", courseId));
-//   //     }));
-
-//   //     message.success("Selected courses deleted successfully!");
-//   //     setSelectedRowKeys([]);
-//   //   } catch (error) {
-//   //     console.error("Error deleting courses:", error);
-//   //     message.error("Failed to delete selected courses!");
-//   //   } finally {
-//   //     setLoading(false);
-//   //   }
-//   // };
-//   const handleDelete = async (courseIds) => {
-//     if (!courseIds || courseIds.length === 0) {
+//   const handleDelete = async () => {
+//     setIsDeleteModalVisible(false);
+//     if (!courseToDelete || courseToDelete.length === 0) {
 //       message.warning("Please select at least one course to delete!");
 //       return;
 //     }
-
 //     setLoading(true);
 //     try {
 //       await Promise.all(
-//         courseIds.map(async (courseId) => {
+//         courseToDelete.map(async (courseId) => {
 //           await deleteDoc(doc(db, "courses", courseId));
 //         })
 //       );
 
-//       message.success("Selected courses deleted successfully!");
-//       setSelectedRowKeys((prevKeys) =>
-//         prevKeys.filter((key) => !courseIds.includes(key))
+//       setCourses((prevCourses) =>
+//         prevCourses.filter((course) => !courseToDelete.includes(course.key))
 //       );
+//       setSelectedRowKeys((prevKeys) =>
+//         prevKeys.filter((key) => !courseToDelete.includes(key))
+//       );
+//       message.success("Selected courses deleted successfully!");
 //     } catch (error) {
 //       console.error("Error deleting courses:", error);
 //       message.error("Failed to delete selected courses!");
 //     } finally {
 //       setLoading(false);
+//       setCourseToDelete([]);
 //     }
 //   };
 
-//   // Show edit modal
 //   const handleEdit = (record) => {
 //     setEditingCourse(record);
 //     form.setFieldsValue(record);
 //     setIsEditModalVisible(true);
 //   };
 
-//   // Update course in Firestore
 //   const handleUpdateCourse = async () => {
 //     try {
+//       setIsUpdating(true);
 //       const values = await form.validateFields();
 //       await updateDoc(doc(db, "courses", editingCourse.key), values);
 //       message.success("Course updated successfully!");
@@ -136,10 +127,11 @@
 //     } catch (error) {
 //       console.error("Error updating course:", error);
 //       message.error("Failed to update course!");
+//     } finally {
+//       setIsUpdating(false);
 //     }
 //   };
 
-//   // Table Columns
 //   const columns = [
 //     { title: "Course Code", dataIndex: "courseCode", key: "courseCode" },
 //     { title: "Course Title", dataIndex: "courseTitle", key: "courseTitle" },
@@ -157,7 +149,7 @@
 //           <Button
 //             icon={<DeleteOutlined />}
 //             danger
-//             onClick={() => handleDelete([record.key])}
+//             onClick={() => confirmDelete([record.key])}
 //           >
 //             Delete
 //           </Button>
@@ -168,7 +160,6 @@
 
 //   return (
 //     <AdminLayout>
-//       {/* Breadcrumb Navigation */}
 //       <Breadcrumb style={{ marginBottom: "16px", cursor: "pointer" }}>
 //         <Breadcrumb.Item onClick={() => navigate("/admin/courses")}>
 //           <HomeOutlined style={{ paddingInline: "10px" }} />
@@ -182,7 +173,6 @@
 //         <h2>View Courses</h2>
 //       </div>
 
-//       {/* Search Bar */}
 //       <Space style={{ marginBottom: 16 }}>
 //         <Input
 //           placeholder="Search courses..."
@@ -192,17 +182,15 @@
 //         />
 //       </Space>
 
-//       {/* Delete Selected Button */}
 //       <Button
 //         type="danger"
-//         onClick={handleDelete}
+//         onClick={() => confirmDelete(selectedRowKeys)}
 //         disabled={selectedRowKeys.length === 0}
 //         style={{ marginBottom: 16 }}
 //       >
 //         Delete Selected
 //       </Button>
 
-//       {/* Course Table */}
 //       {loading ? (
 //         <Skeleton active paragraph={{ rows: 6 }} title={false} />
 //       ) : (
@@ -217,12 +205,25 @@
 //         />
 //       )}
 
+//       <Modal
+//         title="Confirm Deletion"
+//         open={isDeleteModalVisible}
+//         onOk={handleDelete}
+//         onCancel={() => setIsDeleteModalVisible(false)}
+//       >
+//         <p>
+//           Are you sure you want to delete the selected course(s)? This action
+//           cannot be undone.
+//         </p>
+//       </Modal>
+
 //       {/* Edit Course Modal */}
 //       <Modal
 //         title="Edit Course"
 //         open={isEditModalVisible}
 //         onOk={handleUpdateCourse}
 //         onCancel={() => setIsEditModalVisible(false)}
+//         confirmLoading={isUpdating} // disable the OK button during update
 //       >
 //         <Form form={form} layout="vertical">
 //           <Form.Item
@@ -258,7 +259,7 @@
 //             name="semester"
 //             rules={[{ required: true, message: "Please enter semester" }]}
 //           >
-//             <Input />
+//             <Input disabled /> {/* Semester input is disabled */}
 //           </Form.Item>
 //         </Form>
 //       </Modal>
@@ -267,6 +268,7 @@
 // };
 
 // export default ViewCourse;
+
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -278,8 +280,8 @@ import {
   Button,
   Modal,
   Form,
-  message,
   Skeleton,
+  Alert,
 } from "antd";
 import {
   HomeOutlined,
@@ -309,12 +311,16 @@ const ViewCourse = () => {
   const [searchText, setSearchText] = useState("");
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [editingCourse, setEditingCourse] = useState(null);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [courseToDelete, setCourseToDelete] = useState([]);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [alertMessage, setAlertMessage] = useState(null);
+  const [alertType, setAlertType] = useState("info");
   const [form] = Form.useForm();
 
   const auth = getAuth();
   const currentUser = auth.currentUser;
 
-  // Real-time Listener: Listen only for courses created by the current admin
   useEffect(() => {
     if (!currentUser) return;
     const courseCollection = collection(db, "courses");
@@ -330,12 +336,10 @@ const ViewCourse = () => {
     return () => unsubscribe();
   }, [currentUser]);
 
-  // Search function
   const handleSearch = (e) => {
     setSearchText(e.target.value.toLowerCase());
   };
 
-  // Filter courses based on search text
   const filteredCourses = courses.filter((course) => {
     return (
       (course.courseCode || "").toLowerCase().includes(searchText) ||
@@ -345,57 +349,72 @@ const ViewCourse = () => {
     );
   });
 
-  // Handle course deletion (single deletion here)
-  const handleDelete = async (courseIds) => {
-    if (!courseIds || courseIds.length === 0) {
-      message.warning("Please select at least one course to delete!");
+  const confirmDelete = (courseIds) => {
+    setCourseToDelete(courseIds);
+    setIsDeleteModalVisible(true);
+  };
+
+  const handleDelete = async () => {
+    setIsDeleteModalVisible(false);
+    if (!courseToDelete || courseToDelete.length === 0) {
+      setAlertMessage("Please select at least one course to delete!");
+      setAlertType("warning");
       return;
     }
     setLoading(true);
     try {
       await Promise.all(
-        courseIds.map(async (courseId) => {
+        courseToDelete.map(async (courseId) => {
           await deleteDoc(doc(db, "courses", courseId));
         })
       );
-      message.success("Selected courses deleted successfully!");
-      setSelectedRowKeys((prevKeys) =>
-        prevKeys.filter((key) => !courseIds.includes(key))
+
+      setCourses((prevCourses) =>
+        prevCourses.filter((course) => !courseToDelete.includes(course.key))
       );
+      setSelectedRowKeys((prevKeys) =>
+        prevKeys.filter((key) => !courseToDelete.includes(key))
+      );
+      setAlertMessage("Selected courses deleted successfully!");
+      setAlertType("success");
     } catch (error) {
       console.error("Error deleting courses:", error);
-      message.error("Failed to delete selected courses!");
+      setAlertMessage("Failed to delete selected courses!");
+      setAlertType("error");
     } finally {
       setLoading(false);
+      setCourseToDelete([]);
     }
   };
 
-  // Show edit modal
   const handleEdit = (record) => {
     setEditingCourse(record);
     form.setFieldsValue(record);
     setIsEditModalVisible(true);
   };
 
-  // Update course in Firestore
   const handleUpdateCourse = async () => {
     try {
+      setIsUpdating(true);
       const values = await form.validateFields();
       await updateDoc(doc(db, "courses", editingCourse.key), values);
-      message.success("Course updated successfully!");
+      setAlertMessage("Course updated successfully!");
+      setAlertType("success");
       setIsEditModalVisible(false);
       setEditingCourse(null);
     } catch (error) {
       console.error("Error updating course:", error);
-      message.error("Failed to update course!");
+      setAlertMessage("Failed to update course!");
+      setAlertType("error");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  // Table columns definition
   const columns = [
     { title: "Course Code", dataIndex: "courseCode", key: "courseCode" },
     { title: "Course Title", dataIndex: "courseTitle", key: "courseTitle" },
-    { title: "Credit Hours", dataIndex: "creditHours", key: "creditHours" },
+    { title: "Course Unit", dataIndex: "creditHours", key: "creditHours" },
     { title: "Department", dataIndex: "department", key: "department" },
     { title: "Semester", dataIndex: "semester", key: "semester" },
     {
@@ -409,7 +428,7 @@ const ViewCourse = () => {
           <Button
             icon={<DeleteOutlined />}
             danger
-            onClick={() => handleDelete([record.key])}
+            onClick={() => confirmDelete([record.key])}
           >
             Delete
           </Button>
@@ -420,7 +439,6 @@ const ViewCourse = () => {
 
   return (
     <AdminLayout>
-      {/* Breadcrumb Navigation */}
       <Breadcrumb style={{ marginBottom: "16px", cursor: "pointer" }}>
         <Breadcrumb.Item onClick={() => navigate("/admin/courses")}>
           <HomeOutlined style={{ paddingInline: "10px" }} />
@@ -430,11 +448,22 @@ const ViewCourse = () => {
       </Breadcrumb>
       <hr />
 
+      {/* Alert Message */}
+      {alertMessage && (
+        <Alert
+          message={alertMessage}
+          type={alertType}
+          showIcon
+          closable
+          style={{ marginBottom: "16px" }}
+          onClose={() => setAlertMessage(null)}
+        />
+      )}
+
       <div className="view-course-header">
         <h2>View Courses</h2>
       </div>
 
-      {/* Search Bar */}
       <Space style={{ marginBottom: 16 }}>
         <Input
           placeholder="Search courses..."
@@ -444,17 +473,15 @@ const ViewCourse = () => {
         />
       </Space>
 
-      {/* Delete Selected Button */}
       <Button
         type="danger"
-        onClick={() => handleDelete(selectedRowKeys)}
+        onClick={() => confirmDelete(selectedRowKeys)}
         disabled={selectedRowKeys.length === 0}
         style={{ marginBottom: 16 }}
       >
         Delete Selected
       </Button>
 
-      {/* Course Table */}
       {loading ? (
         <Skeleton active paragraph={{ rows: 6 }} title={false} />
       ) : (
@@ -469,12 +496,25 @@ const ViewCourse = () => {
         />
       )}
 
+      <Modal
+        title="Confirm Deletion"
+        open={isDeleteModalVisible}
+        onOk={handleDelete}
+        onCancel={() => setIsDeleteModalVisible(false)}
+      >
+        <p>
+          Are you sure you want to delete the selected course(s)? This action
+          cannot be undone.
+        </p>
+      </Modal>
+
       {/* Edit Course Modal */}
       <Modal
         title="Edit Course"
         open={isEditModalVisible}
         onOk={handleUpdateCourse}
         onCancel={() => setIsEditModalVisible(false)}
+        confirmLoading={isUpdating}
       >
         <Form form={form} layout="vertical">
           <Form.Item
@@ -492,7 +532,7 @@ const ViewCourse = () => {
             <Input />
           </Form.Item>
           <Form.Item
-            label="Credit Hours"
+            label="Course Unit"
             name="creditHours"
             rules={[{ required: true, message: "Please enter credit hours" }]}
           >
@@ -510,7 +550,7 @@ const ViewCourse = () => {
             name="semester"
             rules={[{ required: true, message: "Please enter semester" }]}
           >
-            <Input />
+            <Input disabled /> {/* Semester input is disabled */}
           </Form.Item>
         </Form>
       </Modal>

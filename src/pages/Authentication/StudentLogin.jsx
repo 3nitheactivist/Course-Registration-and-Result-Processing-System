@@ -4,7 +4,7 @@ import { Form, Input, Button, Alert, Card } from "antd";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { db, auth } from "../../firebase/firebaseConfig";
 import { collection, query, where, getDocs } from "firebase/firestore";
-import "./StudentLogin.css";
+
 
 const StudentLogin = () => {
   const [loading, setLoading] = useState(false);
