@@ -54,14 +54,13 @@ const ViewStudents = () => {
   const auth = getAuth();
   const currentUser = auth.currentUser;
 
-  // Real-time listener for students created by the current admin, sorted by createdAt (newest first)
+  // Modified query to fetch all students without the userId filter
   useEffect(() => {
-    if (!currentUser) return;
     const q = query(
       collection(db, "students"),
-      where("userId", "==", currentUser.uid),
       orderBy("createdAt", "desc")
     );
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const studentList = snapshot.docs.map((doc) => ({
         key: doc.id,
@@ -70,8 +69,9 @@ const ViewStudents = () => {
       setStudents(studentList);
       setLoading(false);
     });
+    
     return () => unsubscribe();
-  }, [currentUser]);
+  }, []);
 
   // Fetch all courses created by the current admin (for the select options)
   useEffect(() => {

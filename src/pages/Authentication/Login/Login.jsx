@@ -87,41 +87,23 @@ const Login = () => {
     try {
       setLoading(true);
       await signInWithEmailAndPassword(auth, email, password);
-      await login(email, password);
-
-      // Handle remember me
+      
+      // Store admin password if remember me is checked
       if (rememberMe) {
         localStorage.setItem("rememberedEmail", email);
+        localStorage.setItem("adminPassword", password);
       } else {
         localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("adminPassword");
       }
 
       toast.addToast("Login successful", "success");
 
       // Navigate to the admin dashboard since this is admin login
       navigate("/admin/dashboard");
-    } catch (err) {
-      let errorMessage = "An error occurred during login";
-      switch (err.code) {
-        case "auth/invalid-email":
-          errorMessage = "Invalid email address";
-          break;
-        case "auth/user-disabled":
-          errorMessage = "This account has been disabled";
-          break;
-        case "auth/user-not-found":
-          errorMessage = "No account found with this email";
-          break;
-        case "auth/wrong-password":
-          errorMessage = "Incorrect password";
-          break;
-        case "auth/invalid-credential":
-          errorMessage = "Incorrect email or password";
-          break;
-        default:
-          errorMessage = err.message;
-      }
-      toast.addToast(errorMessage, "error");
+    } catch (error) {
+      console.error("Login error:", error);
+      toast.addToast(error.message, "error");
     } finally {
       setLoading(false);
     }

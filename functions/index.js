@@ -1,69 +1,64 @@
-/* eslint-env node */
-const functions = require("firebase-functions");
-const admin = require("firebase-admin");
-
+const functions = require('firebase-functions');
+const admin = require('firebase-admin');
 admin.initializeApp();
 
 exports.enrollStudent = functions.https.onCall(async (data, context) => {
-  // Ensure the request is authenticated.
-  if (!context.auth) {
-    throw new functions.https.HttpsError("unauthenticated", "User must be authenticated.");
+  // Verify that the request is from an admin
+  if (!context.auth || !context.auth.token.admin) {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'Only admins can enroll students.'
+    );
   }
-
-  // Optionally, check if the calling user is an admin.
-  // if (!context.auth.token.admin) {
-  //   throw new functions.https.HttpsError("permission-denied", "User is not an admin.");
-  // }
 
   const { name, email, matricNumber, department, courses } = data;
 
+  // Validate required fields
   if (!name || !email || !matricNumber || !department) {
     throw new functions.https.HttpsError(
-      "invalid-argument",
-      "Missing required fields (name, email, matricNumber, or department)."
+      'invalid-argument',
+      'Missing required fields.'
     );
   }
 
   try {
-    // Create a new user account with a default password.
+    // Create Firebase Auth user with default password
     const defaultPassword = "student123";
     const userRecord = await admin.auth().createUser({
-      email: email,
+      email,
       password: defaultPassword,
       displayName: name,
     });
-    const uid = userRecord.uid;
 
-    // Prepare user data.
-    const userData = {
-      userId: uid,
-      email: email,
-      matricNumber: matricNumber,
-      role: "student",
+    // Add custom claims to identify user as student
+    await admin.auth().setCustomUserClaims(userRecord.uid, {
+      student: true
+    });
+
+    // Create user document
+    await admin.firestore().collection('users').doc(userRecord.uid).set({
+      userId: userRecord.uid,
+      email,
+      matricNumber,
+      role: 'student',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    };
+    });
 
-    // Write to the "users" collection using the student's UID as the document ID.
-    await admin.firestore().doc(`users/${uid}`).set(userData);
-
-    // Prepare student data.
-    const studentData = {
-      name: name,
-      matricNumber: matricNumber,
-      email: email,
-      department: department,
-      courses: courses || [], // Ensure courses is an array.
+    // Create student document
+    await admin.firestore().collection('students').add({
+      name,
+      matricNumber,
+      email,
+      department,
+      courses: courses || [],
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      enrolledBy: context.auth.uid, // The admin who enrolled the student.
-      authUserId: uid,
-    };
+      enrolledBy: context.auth.uid, // ID of admin who enrolled the student
+      authUserId: userRecord.uid,
+    });
 
-    // Write to the "students" collection.
-    await admin.firestore().collection("students").add(studentData);
-
-    return { success: true, message: "Student enrolled successfully." };
+    return { success: true, message: 'Student enrolled successfully' };
   } catch (error) {
-    console.error("Error enrolling student:", error);
-    throw new functions.https.HttpsError("internal", error.message);
+    console.error('Error enrolling student:', error);
+    throw new functions.https.HttpsError('internal', error.message);
   }
 });

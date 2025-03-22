@@ -1,444 +1,9 @@
-// import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { Form, Input, Button, Alert, Card } from "antd";
-// import { signInWithEmailAndPassword } from "firebase/auth";
-// import { db, auth } from "../../firebase/firebaseConfig";
-// import { collection, query, where, getDocs } from "firebase/firestore";
-
-
-// const StudentLogin = () => {
-//   const [loading, setLoading] = useState(false);
-//   const [errorMessage, setErrorMessage] = useState(null);
-//   const navigate = useNavigate();
-//   const [form] = Form.useForm();
-
-//   // const handleLogin = async (values) => {
-//   //   setLoading(true);
-//   //   setErrorMessage(null);
-    
-//   //   try {
-//   //     // 🔍 Check if student exists in "users" collection
-//   //     const userQuery = query(collection(db, "users"), where("email", "==", values.email));
-//   //     const userSnapshot = await getDocs(userQuery);
-
-//   //     if (!userSnapshot.empty) {
-//   //       // 🔍 Check if student exists in "students" collection
-//   //       const studentQuery = query(collection(db, "students"), where("matricNumber", "==", values.matricNumber));
-//   //       const studentSnapshot = await getDocs(studentQuery);
-
-//   //       if (!studentSnapshot.empty) {
-//   //         // ✅ Student found! Now log in via Firebase Auth
-//   //         await signInWithEmailAndPassword(auth, values.email, values.password);
-          
-//   //         navigate("/student/dashboard"); // Redirect to Student Dashboard
-//   //       } else {
-//   //         setErrorMessage("Matric Number not found! Contact Admin.");
-//   //       }
-//   //     } else {
-//   //       setErrorMessage("Email not found! Ensure you are enrolled.");
-//   //     }
-//   //   } catch (error) {
-//   //     setErrorMessage("Login failed! Please check credentials.");
-//   //     console.error("Login Error:", error);
-//   //   } finally {
-//   //     setLoading(false);
-//   //   }
-//   // };
-
-//   const handleLogin = async (values) => {
-//     setLoading(true);
-//     setErrorMessage(null);
-  
-//     try {
-//       // 🔍 Check if student exists in `users` collection
-//       const userQuery = query(collection(db, "users"), where("email", "==", values.email));
-//       const userSnapshot = await getDocs(userQuery);
-  
-//       if (userSnapshot.empty) {
-//         setErrorMessage("⚠ Email not found! Ensure you are enrolled.");
-//         setLoading(false);
-//         return;
-//       }
-  
-//       // 🔍 Check if student exists in `students` collection by matric number
-//       const studentQuery = query(
-//         collection(db, "students"),
-//         where("matricNumber", "==", values.matricNumber)
-//       );
-//       const studentSnapshot = await getDocs(studentQuery);
-  
-//       if (studentSnapshot.empty) {
-//         setErrorMessage("⚠ Matric Number not found! Contact Admin.");
-//         setLoading(false);
-//         return;
-//       }
-  
-//       // ✅ Both email and matric number exist; Log in using Firebase Auth
-//       await signInWithEmailAndPassword(auth, values.email, values.password);
-//       navigate("/student/dashboard"); // Redirect to Student Dashboard
-//     } catch (error) {
-//       setErrorMessage("❌ Login failed! Please check credentials.");
-//       console.error("Login Error:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-  
-
-
-//     <div className="login-container">
-//     <div className="login-form">
-//       <div className="form-header">
-//         <h2 className="form-title">Student Login</h2>
-//       </div>
-
-//       {errorMessage && <Alert message={errorMessage} type="error" showIcon closable style={{ marginBottom: 16 }} />}
-
-//       <div className="form-group">
-//         <input
-//           className="form-input"
-//           type="email"
-//           placeholder="Email"
-//          name="email"
-//           // onChange={(e) => setEmail(e.target.value)}
-//           disabled={loading}
-//         />
-//       </div>
-//       <div className="form-group password-input-wrapper">
-//         <input
-//           className="form-input"
-//           type="text"
-//           placeholder="Enter matric number"
-//           // value={password}
-//           // onChange={(e) => setPassword(e.target.value)}
-//           disabled={loading}
-//         />
-//         <button
-//           type="button"
-//           onClick={() => setShowPassword(!showPassword)}
-//           className="password-toggle-btn"
-//           disabled={loading}
-//         >
-//           {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-//         </button>
-//       </div>
-
-//       <div className="form-options">
-//         <label className="remember-me">
-//           <input
-//             type="checkbox"
-//             checked={rememberMe}
-//             onChange={(e) => setRememberMe(e.target.checked)}
-//             disabled={loading}
-//           />
-//           <span>Remember me</span>
-//         </label>
-//       </div>
-
-//       <div className="form-actions">
-//         <button
-//           className="login-button"
-//           type="button"
-//           onClick={handleLogin}
-//           disabled={loading}
-//         >
-//           {loading ? <SyncLoader size={10} color="White" /> : "Login"}
-//         </button>
-//       </div>
-//     </div>
-//   </div>
-// };
-
-// export default StudentLogin;
-
-// import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { Form, Input, Button, Alert, Card } from "antd";
-// import { signInWithEmailAndPassword } from "firebase/auth";
-// import { db, auth } from "../../firebase/firebaseConfig"
-// import { collection, query, where, getDocs } from "firebase/firestore";
-// import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
-
-// const StudentLogin = () => {
-//   const [loading, setLoading] = useState(false);
-//   const [errorMessage, setErrorMessage] = useState(null);
-//   const navigate = useNavigate();
-//   const [form] = Form.useForm();
-
-//   const handleLogin = async (values) => {
-//     setLoading(true);
-//     setErrorMessage(null);
-//     try {
-//       // Check if the email exists in the "users" collection
-//       const userQuery = query(
-//         collection(db, "users"),
-//         where("email", "==", values.email)
-//       );
-//       const userSnapshot = await getDocs(userQuery);
-
-//       if (userSnapshot.empty) {
-//         setErrorMessage("⚠ Email not found! Ensure you are enrolled.");
-//         setLoading(false);
-//         return;
-//       }
-
-//       // Check if the matric number exists in the "students" collection
-//       const studentQuery = query(
-//         collection(db, "students"),
-//         where("matricNumber", "==", values.matricNumber)
-//       );
-//       const studentSnapshot = await getDocs(studentQuery);
-
-//       if (studentSnapshot.empty) {
-//         setErrorMessage("⚠ Matric Number not found! Contact Admin.");
-//         setLoading(false);
-//         return;
-//       }
-
-//       // Both checks passed: Log in via Firebase Auth
-//       await signInWithEmailAndPassword(auth, values.email, values.password);
-//       navigate("/student/dashboard"); // Redirect to Student Dashboard
-//     } catch (error) {
-//       setErrorMessage("❌ Login failed! Please check credentials.");
-//       console.error("Login Error:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div className="login-container" style={{ padding: "50px 0", width: "100%" }}>
-//       <Card
-//         title="Student Login"
-//         style={{ maxWidth: 400, margin: "auto" }}
-//       >
-//         {errorMessage && (
-//           <Alert
-//             message={errorMessage}
-//             type="error"
-//             showIcon
-//             closable
-//             style={{ marginBottom: 16 }}
-//           />
-//         )}
-//         <Form
-//           form={form}
-//           layout="vertical"
-//           onFinish={handleLogin}
-//         >
-//           <Form.Item
-//             label="Email"
-//             name="email"
-//             rules={[
-//               { required: true, message: "Please input your email!" },
-//               { type: "email", message: "Invalid email!" },
-//             ]}
-//           >
-//             <Input disabled={loading} />
-//           </Form.Item>
-//           <Form.Item
-//             label="Matric Number"
-//             name="matricNumber"
-//             rules={[{ required: true, message: "Please input your matric number!" }]}
-//           >
-//             <Input disabled={loading} />
-//           </Form.Item>
-//           <Form.Item
-//             label="Password"
-//             name="password"
-//             rules={[{ required: true, message: "Please input your password!" }]}
-//           >
-//             <Input.Password
-//               disabled={loading}
-//               iconRender={visible =>
-//                 visible ? <EyeInvisibleOutlined /> : <EyeOutlined />
-//               }
-//             />
-//           </Form.Item>
-//           <Form.Item>
-//             <Button
-//               type="primary"
-//               htmlType="submit"
-//               loading={loading}
-//               block
-//             >
-//               Login
-//             </Button>
-//           </Form.Item>
-//         </Form>
-//       </Card>
-//     </div>
-//   );
-// };
-
-// export default StudentLogin;
-
-
-// import React, { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import { Form, Input, Button, Alert, Card } from "antd";
-// import { signInWithEmailAndPassword } from "firebase/auth";
-// import { db, auth } from "../../firebase/firebaseConfig";
-// import { collection, query, where, getDocs } from "firebase/firestore";
-// import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
-
-// const StudentLogin = () => {
-//   const [loading, setLoading] = useState(false);
-//   const [errorMessage, setErrorMessage] = useState(null);
-//   const navigate = useNavigate();
-//   const [form] = Form.useForm();
-
-//   const handleLogin = async (values) => {
-//     setLoading(true);
-//     setErrorMessage(null);
-//     try {
-//       // Check if the email exists in the "users" collection
-//       const userQuery = query(
-//         collection(db, "users"),
-//         where("email", "==", values.email)
-//       );
-//       const userSnapshot = await getDocs(userQuery);
-
-//       if (userSnapshot.empty) {
-//         setErrorMessage("⚠ Email not found! Ensure you are enrolled.");
-//         setLoading(false);
-//         return;
-//       }
-
-//       // Check if the matric number exists in the "students" collection
-//       const studentQuery = query(
-//         collection(db, "students"),
-//         where("matricNumber", "==", values.matricNumber)
-//       );
-//       const studentSnapshot = await getDocs(studentQuery);
-
-//       if (studentSnapshot.empty) {
-//         setErrorMessage("⚠ Matric Number not found! Contact Admin.");
-//         setLoading(false);
-//         return;
-//       }
-
-//       // Both checks passed: Log in via Firebase Auth
-//       await signInWithEmailAndPassword(auth, values.email, values.password);
-//       navigate("/student/dashboard"); // Redirect to Student Dashboard
-//     } catch (error) {
-//       setErrorMessage("❌ Login failed! Please check credentials.");
-//       console.error("Login Error:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   return (
-//     <div style={{ 
-//       display: "flex", 
-//       justifyContent: "center", 
-//       alignItems: "center", 
-//       padding: "50px 0", 
-//       width: "100%",
-//       minHeight: "100vh",
-//       background: "linear-gradient(to right, #f5f7fa, #c3cfe2)"
-//     }}>
-//       <Card
-//         title="Student Login"
-//         style={{ 
-//           maxWidth: 400, 
-//           width: "90%",
-//           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-//           borderRadius: "8px"
-//         }}
-//         headStyle={{ 
-//           background: "#2c3e50", 
-//           color: "white",
-//           fontSize: "20px",
-//           textAlign: "center",
-//           padding: "16px"
-//         }}
-//       >
-//         {errorMessage && (
-//           <Alert
-//             message={errorMessage}
-//             type="error"
-//             showIcon
-//             closable
-//             style={{ marginBottom: 16, borderRadius: "4px" }}
-//           />
-//         )}
-//         <Form
-//           form={form}
-//           layout="vertical"
-//           onFinish={handleLogin}
-//         >
-//           <Form.Item
-//             label="Email"
-//             name="email"
-//             rules={[
-//               { required: true, message: "Please input your email!" },
-//               { type: "email", message: "Invalid email!" },
-//             ]}
-//           >
-//             <Input 
-//               disabled={loading} 
-//               style={{ height: "38px", borderRadius: "4px" }}
-//               placeholder="Enter your email address"
-//             />
-//           </Form.Item>
-//           <Form.Item
-//             label="Matric Number"
-//             name="matricNumber"
-//             rules={[{ required: true, message: "Please input your matric number!" }]}
-//           >
-//             <Input 
-//               disabled={loading} 
-//               style={{ height: "38px", borderRadius: "4px" }}
-//               placeholder="Enter your matric number"
-//             />
-//           </Form.Item>
-//           <Form.Item
-//             label="Password"
-//             name="password"
-//             rules={[{ required: true, message: "Please input your password!" }]}
-//           >
-//             <Input.Password
-//               disabled={loading}
-//               style={{ height: "38px", borderRadius: "4px" }}
-//               placeholder="Enter your password"
-//               iconRender={visible =>
-//                 visible ? <EyeInvisibleOutlined /> : <EyeOutlined />
-//               }
-//             />
-//           </Form.Item>
-//           <Form.Item style={{ marginBottom: "0" }}>
-//             <Button
-//               type="primary"
-//               htmlType="submit"
-//               loading={loading}
-//               block
-//               style={{ 
-//                 height: "40px", 
-//                 borderRadius: "4px", 
-//                 background: "#4CAF50", 
-//                 borderColor: "#4CAF50",
-//                 marginTop: "8px"
-//               }}
-//             >
-//               Login
-//             </Button>
-//           </Form.Item>
-//         </Form>
-//       </Card>
-//     </div>
-//   );
-// };
-
-// export default StudentLogin;
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Form, Input, Button, Alert, Card } from "antd";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { Form, Input, Button, Alert, Card, Modal } from "antd";
+import { signInWithEmailAndPassword, updatePassword } from "firebase/auth";
 import { db, auth } from "../../firebase/firebaseConfig";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, getDoc, doc, updateDoc } from "firebase/firestore";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 
@@ -447,52 +12,61 @@ const StudentLogin = () => {
   const [errorMessage, setErrorMessage] = useState(null);
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const [passwordForm] = Form.useForm();
+  const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+
+  const handlePasswordChange = async (values) => {
+    try {
+      const user = auth.currentUser;
+      await updatePassword(user, values.newPassword);
+      
+      await updateDoc(doc(db, "users", user.uid), {
+        hasChangedPassword: true
+      });
+
+      setIsPasswordModalVisible(false);
+      navigate("/student/dashboard");
+    } catch (error) {
+      console.error("Password change error:", error);
+      setErrorMessage("Failed to change password. Please try again.");
+    }
+  };
 
   const handleLogin = async (values) => {
     setLoading(true);
     setErrorMessage(null);
     try {
-      // Check if the email exists in the "users" collection
-      const userQuery = query(
-        collection(db, "users"),
-        where("email", "==", values.email)
-      );
-      const userSnapshot = await getDocs(userQuery);
-
-      if (userSnapshot.empty) {
-        setErrorMessage("⚠ Email not found! Ensure you are enrolled.");
-        setLoading(false);
-        return;
-      }
-
-      // Check if the matric number exists in the "students" collection
-      const studentQuery = query(
-        collection(db, "students"),
-        where("matricNumber", "==", values.matricNumber)
-      );
-      const studentSnapshot = await getDocs(studentQuery);
-
-      if (studentSnapshot.empty) {
-        setErrorMessage("⚠ Matric Number not found! Contact Admin.");
-        setLoading(false);
-        return;
-      }
-
-      // Both checks passed: Log in via Firebase Auth
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      navigate("/student/dashboard"); // Redirect to Student Dashboard
+
+      const userDoc = await getDoc(doc(db, "users", auth.currentUser.uid));
+      
+      if (!userDoc.exists()) {
+        await auth.signOut();
+        setErrorMessage("User account not found!");
+        return;
+      }
+
+      const userData = userDoc.data();
+      if (userData.role !== "student" || userData.matricNumber !== values.matricNumber) {
+        await auth.signOut();
+        setErrorMessage("⚠ Invalid email or matric number combination!");
+        return;
+      }
+
+      if (!userData.hasChangedPassword && values.password === "student123") {
+        setIsPasswordModalVisible(true);
+      } else {
+        navigate("/student/dashboard");
+      }
     } catch (error) {
-      setErrorMessage("❌ Login failed! Please check credentials.");
       console.error("Login Error:", error);
+      setErrorMessage("❌ Login failed! Please check your credentials.");
     } finally {
       setLoading(false);
     }
   };
 
   const containerStyle = {
-    // display: "flex",
-    // justifyContent: "center",
-    // alignItems: "center",
     minHeight: "100vh",
     background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
     padding: "20px",
@@ -682,6 +256,75 @@ const StudentLogin = () => {
           </div>
         </Card>
       </motion.div>
+
+      <Modal
+        title="Change Your Password"
+        open={isPasswordModalVisible}
+        onCancel={() => setIsPasswordModalVisible(false)}
+        footer={null}
+        closable={false}
+        maskClosable={false}
+      >
+        <Form
+          form={passwordForm}
+          layout="vertical"
+          onFinish={handlePasswordChange}
+        >
+          <Alert
+            message="For security reasons, please change your default password."
+            type="warning"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+          
+          <Form.Item
+            name="newPassword"
+            label="New Password"
+            rules={[
+              { required: true, message: "Please input your new password!" },
+              { min: 6, message: "Password must be at least 6 characters!" }
+            ]}
+          >
+            <Input.Password 
+              style={inputStyle}
+              placeholder="Enter your new password" 
+            />
+          </Form.Item>
+
+          <Form.Item
+            name="confirmPassword"
+            label="Confirm Password"
+            dependencies={['newPassword']}
+            rules={[
+              { required: true, message: "Please confirm your password!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('newPassword') === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(new Error('The two passwords do not match!'));
+                },
+              }),
+            ]}
+          >
+            <Input.Password 
+              style={inputStyle}
+              placeholder="Confirm your new password" 
+            />
+          </Form.Item>
+
+          <Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              block
+              style={buttonStyle}
+            >
+              Update Password
+            </Button>
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };

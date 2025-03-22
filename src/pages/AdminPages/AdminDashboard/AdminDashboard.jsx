@@ -178,12 +178,12 @@ const AdminDashboard = () => {
               Check list of available student
             </Card>
           </motion.div>
-
+{/* 
           <motion.div variants={itemVariants}>
             <Card title="Overview of results" style={{ height: "100%", cursor: "pointer", }} onClick={() => navigate("/admin/results")}>
               Update result of student
             </Card>
-          </motion.div>
+          </motion.div> */}
         </motion.div>
       </motion.div>
     </AdminLayout>

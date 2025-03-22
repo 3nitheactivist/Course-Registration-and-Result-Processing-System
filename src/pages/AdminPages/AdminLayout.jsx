@@ -213,12 +213,12 @@ const AdminLayout = ({ children }) => {
                 key: "/admin/courses",
                 icon: coursei,
                 label: "Courses"
-              },
-              {
-                key: "/admin/results",
-                icon: resulti,
-                label: "Results"
               }
+              // {
+              //   key: "/admin/results",
+              //   icon: resulti,
+              //   label: "Results"
+              // }
             ].map(item => (
               <Menu.Item
                 key={item.key}
