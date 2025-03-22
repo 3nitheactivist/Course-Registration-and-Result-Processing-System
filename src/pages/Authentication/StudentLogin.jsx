@@ -1,19 +1,23 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Form, Input, Button, Alert, Card, Modal } from "antd";
-import { signInWithEmailAndPassword, updatePassword } from "firebase/auth";
+import { Form, Input, Button, Alert, Card, Modal, message } from "antd";
+import { signInWithEmailAndPassword, updatePassword, sendPasswordResetEmail } from "firebase/auth";
 import { db, auth } from "../../firebase/firebaseConfig";
-import { collection, query, where, getDocs, getDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, getDoc, doc, updateDoc, limit } from "firebase/firestore";
 import { EyeOutlined, EyeInvisibleOutlined } from "@ant-design/icons";
 import { motion } from "framer-motion";
 
 const StudentLogin = () => {
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [resetSuccess, setResetSuccess] = useState(false);
   const navigate = useNavigate();
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
+  const [forgotPasswordForm] = Form.useForm();
   const [isPasswordModalVisible, setIsPasswordModalVisible] = useState(false);
+  const [isForgotPasswordModalVisible, setIsForgotPasswordModalVisible] = useState(false);
 
   const handlePasswordChange = async (values) => {
     try {
@@ -63,6 +67,30 @@ const StudentLogin = () => {
       setErrorMessage("❌ Login failed! Please check your credentials.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (values) => {
+    setResetLoading(true);
+    setErrorMessage(null);
+    setResetSuccess(false);
+    
+    try {
+      // Only validate the email address - no database queries needed
+      await sendPasswordResetEmail(auth, values.email);
+      
+      // Show success message
+      setResetSuccess(true);
+    } catch (error) {
+      console.error("Password reset error:", error);
+      
+      if (error.code === 'auth/user-not-found') {
+        setErrorMessage("No account found with this email address.");
+      } else {
+        setErrorMessage("Error: " + (error.message || "Failed to send reset email. Please try again."));
+      }
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -221,7 +249,15 @@ const StudentLogin = () => {
               </motion.div>
 
               <div style={forgotPasswordStyle}>
-                <a style={forgotPasswordLinkStyle}>Forgot Password?</a>
+                <a 
+                  style={forgotPasswordLinkStyle}
+                  onClick={() => {
+                    setIsForgotPasswordModalVisible(true);
+                    setErrorMessage(null);
+                  }}
+                >
+                  Forgot Password?
+                </a>
               </div>
 
               <motion.div
@@ -323,6 +359,96 @@ const StudentLogin = () => {
               Update Password
             </Button>
           </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title="Reset Password"
+        open={isForgotPasswordModalVisible}
+        onCancel={() => {
+          setIsForgotPasswordModalVisible(false);
+          forgotPasswordForm.resetFields();
+          setErrorMessage(null);
+          setResetSuccess(false);
+        }}
+        footer={null}
+      >
+        <Form
+          form={forgotPasswordForm}
+          layout="vertical"
+          onFinish={handleForgotPassword}
+        >
+          {errorMessage && (
+            <Alert
+              message={errorMessage}
+              type="error"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          )}
+          
+          {resetSuccess ? (
+            <Alert
+              message="Password reset email sent!"
+              description={
+                <div>
+                  <p>A password reset email has been sent to <strong>{forgotPasswordForm.getFieldValue('email')}</strong>.</p>
+                  <p>Please check your inbox and follow the instructions to reset your password.</p>
+                  <Button 
+                    type="primary" 
+                    onClick={() => {
+                      setIsForgotPasswordModalVisible(false);
+                      forgotPasswordForm.resetFields();
+                      setResetSuccess(false);
+                    }}
+                    style={{ marginTop: 10 }}
+                  >
+                    Close
+                  </Button>
+                </div>
+              }
+              type="success"
+              showIcon
+              style={{ marginBottom: 16 }}
+            />
+          ) : (
+            <>
+              <Alert
+                message="Enter your email to reset your password"
+                description="A password reset link will be sent to your email address."
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              
+              <Form.Item
+                name="email"
+                label="Email Address"
+                rules={[
+                  { required: true, message: "Please input your email!" },
+                  { type: "email", message: "Invalid email format!" }
+                ]}
+              >
+                <Input
+                  style={inputStyle}
+                  placeholder="Enter your school email"
+                  disabled={resetLoading}
+                />
+              </Form.Item>
+
+              <Form.Item>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  block
+                  loading={resetLoading}
+                  style={buttonStyle}
+                >
+                  Reset Password
+                </Button>
+              </Form.Item>
+            </>
+          )}
         </Form>
       </Modal>
     </div>

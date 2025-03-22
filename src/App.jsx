@@ -23,7 +23,6 @@ import ViewStudents from "./pages/AdminPages/EnrollStudents/ViewStudents/ViewStu
 import StudentProfile from "./pages/AdminPages/EnrollStudents/ViewStudents/StudentProfile";
 import ResultsOverview from "./pages/AdminPages/UploadResults/ResultsOverview";
 import StudentLogin from "./pages/Authentication/StudentLogin";
-import StudentResults from "./pages/StudentPages/StudentResults/StudentResults";
 import StudentCourses from "./pages/StudentPages/DashboardContent/DashboardContent";
 import ProfileStudent from "./pages/StudentPages/ProfileStudent/ProfileStudent";
 
@@ -52,14 +51,14 @@ function App() {
               <StudentLogin />
           }
         />
-        <Route
+        {/* <Route
           path="/student/view-results"
           element={
             <ProtectedRoute>
               < StudentResults />
             </ProtectedRoute>
           }
-        />
+        /> */}
         <Route
           path="/student/view-courses"
           element={

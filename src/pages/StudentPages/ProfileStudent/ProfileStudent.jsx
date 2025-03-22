@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
-  Layout,
-  Menu,
   Typography,
   Form,
   Input,
@@ -15,10 +13,10 @@ import {
   message,
   Tabs,
   Modal,
-  Breadcrumb,
   Alert,
   Select,
 } from "antd";
+
 import { motion } from "framer-motion";
 import {
   UserOutlined,
@@ -29,20 +27,20 @@ import {
   EditOutlined,
   SaveOutlined,
   CameraOutlined,
+  LoadingOutlined,
+  PlusOutlined
 } from "@ant-design/icons";
 import { auth, db } from "../../../firebase/firebaseConfig";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../../context/AuthContext";
+import StudentLayout from "../StudentLayout/StudentLayout";
 
-const { Header, Sider, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
 const { Option } = Select;
 
 const ProfileStudent = () => {
-  const [collapsed, setCollapsed] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [form] = Form.useForm();
   const [passwordForm] = Form.useForm();
@@ -51,7 +49,12 @@ const ProfileStudent = () => {
   const [loading, setLoading] = useState(true);
   const [passwordChangeStatus, setPasswordChangeStatus] = useState(null);
   const navigate = useNavigate();
-  const { logout } = useAuth();
+  
+  // Image upload states
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Animation variants
   const containerVariants = {
@@ -91,6 +94,11 @@ const ProfileStudent = () => {
           };
           setStudentData(student);
           form.setFieldsValue(student);
+          
+          // Set image preview if student has a profile image
+          if (student.profileImage && student.profileImage.data) {
+            setImagePreview(student.profileImage.data);
+          }
         }
       } catch (error) {
         console.error("Error fetching student data:", error);
@@ -103,43 +111,75 @@ const ProfileStudent = () => {
     fetchStudentData();
   }, [form]);
 
-  const toggle = () => {
-    setCollapsed(!collapsed);
-  };
-
   const handleEdit = () => {
     setEditMode(true);
   };
 
   const handleSave = async () => {
     try {
+      setUploadLoading(true);
       const values = await form.validateFields();
       const studentRef = doc(db, "students", studentData.id);
       
       // Validate required fields
       if (!values.gender || !values.phoneNumber || !values.dateOfBirth) {
         message.error('Please fill in all required fields');
+        setUploadLoading(false);
         return;
       }
 
-      // Only update editable fields
-      await updateDoc(studentRef, {
+      // Prepare profile image data if available
+      let profileImageData = null;
+      if (imageFile) {
+        try {
+          // Use the preview we already generated
+          if (imagePreview) {
+            profileImageData = { 
+              data: imagePreview,
+              uploaded: new Date()
+            };
+          }
+        } catch (imageError) {
+          console.error('Error processing image:', imageError);
+          message.warning('Could not process the image, but continuing with update');
+        }
+      }
+
+      // Update fields
+      const updateData = {
         gender: values.gender,
         phoneNumber: values.phoneNumber,
         dateOfBirth: values.dateOfBirth
-      });
+      };
+
+      // Add profile image if available
+      if (profileImageData) {
+        updateData.profileImage = profileImageData;
+      }
+
+      await updateDoc(studentRef, updateData);
 
       setEditMode(false);
       message.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
       message.error('Failed to update profile. Please check all required fields.');
+    } finally {
+      setUploadLoading(false);
     }
   };
 
   const handleCancel = () => {
     form.setFieldsValue(studentData);
     setEditMode(false);
+    
+    // Reset image preview to original if cancelling
+    if (studentData && studentData.profileImage && studentData.profileImage.data) {
+      setImagePreview(studentData.profileImage.data);
+    } else {
+      setImagePreview(null);
+    }
+    setImageFile(null);
   };
 
   const showPasswordModal = () => {
@@ -189,7 +229,7 @@ const ProfileStudent = () => {
         // Delayed logout
         setTimeout(async () => {
           try {
-            await logout();
+            await auth.signOut();
             navigate('/student/login');
           } catch (error) {
             console.error('Logout error:', error);
@@ -246,263 +286,308 @@ const ProfileStudent = () => {
     },
   };
 
-  return (
-    <Layout style={{ minHeight: "100vh" }}>
-      {/* Sidebar Navigation */}
+  // The main profile content
+  const profileContent = (
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
+      <motion.div variants={itemVariants}>
+        <Title level={2}>Student Profile</Title>
+        <Paragraph type="secondary">
+          View and manage your profile information
+        </Paragraph>
+      </motion.div>
 
-      <Layout>
-        {/* Top Header */}
-
-        {/* Main Content */}
-        <Content
-          style={{
-            margin: "24px 16px",
-            padding: 24,
-            background: "#fff",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.09)",
-            minHeight: 280,
-          }}
-        >
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={containerVariants}
-          >
-            <motion.div variants={itemVariants}>
-              <Title level={2}>Student Profile</Title>
-              <Paragraph type="secondary">
-                View and manage your profile information
-              </Paragraph>
-            </motion.div>
-
-            <Tabs defaultActiveKey="1">
-              <TabPane tab="Personal Information" key="1">
-                <motion.div variants={containerVariants}>
-                  <Row gutter={[24, 24]}>
-                    {/* Profile Picture Column */}
-                    <Col xs={24} md={8}>
-                      <motion.div variants={itemVariants}>
-                        <Card
-                          bordered={false}
+      <Tabs defaultActiveKey="1">
+        <TabPane tab="Personal Information" key="1">
+          <motion.div variants={containerVariants}>
+            <Row gutter={[24, 24]}>
+              {/* Profile Picture Column */}
+              <Col xs={24} md={8}>
+                <motion.div variants={itemVariants}>
+                  <Card
+                    bordered={false}
+                    style={{
+                      textAlign: "center",
+                      borderRadius: "8px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                      position: "relative"
+                    }}
+                  >
+                    <div style={{ marginBottom: "24px", position: "relative" }}>
+                      <Avatar
+                        size={120}
+                        icon={<UserOutlined />}
+                        src={imagePreview}
+                        style={{ backgroundColor: "#4CAF50" }}
+                      />
+                      {editMode && (
+                        <Button
+                          shape="circle"
+                          icon={<CameraOutlined />}
+                          onClick={() => fileInputRef.current?.click()}
                           style={{
-                            textAlign: "center",
-                            borderRadius: "8px",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                            position: "absolute",
+                            bottom: 0,
+                            right: "50%",
+                            transform: "translateX(60px)",
+                            backgroundColor: "#fff",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                            border: "none",
                           }}
-                        >
-                          <div style={{ marginBottom: "24px" }}>
-                            <Avatar
-                              size={120}
-                              icon={<UserOutlined />}
-                              style={{ backgroundColor: "#4CAF50" }}
-                            />
-                            <Upload {...uploadProps}>
-                              <Button
-                                shape="circle"
-                                icon={<CameraOutlined />}
-                                style={{
-                                  position: "absolute",
-                                  marginTop: "85px",
-                                  marginLeft: "-30px",
-                                  backgroundColor: "#fff",
-                                  boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                                  border: "none",
-                                }}
-                              />
-                            </Upload>
-                          </div>
-                          <Title level={4}>{studentData?.name}</Title>
-                          <Text type="secondary">
-                            {studentData?.matricNumber}
-                          </Text>
-                          <div style={{ marginTop: "8px" }}>
-                            <Text>{studentData?.department}</Text>
-                          </div>
-                          <div style={{ marginTop: "8px" }}>
-                            <Text>{studentData?.level}</Text>
-                          </div>
-                          <Divider />
+                        />
+                      )}
+                      <input 
+                        type="file" 
+                        ref={fileInputRef}
+                        style={{ display: 'none' }}
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files[0];
+                          
+                          if (!file) return;
+                          
+                          // Check file size
+                          if (file.size > 2 * 1024 * 1024) {
+                            message.error('Image must be smaller than 2MB!');
+                            return;
+                          }
+                          
+                          // Save file to state
+                          setImageFile(file);
+                          
+                          // Create preview
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            setImagePreview(event.target.result);
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                      />
+                    </div>
+                    <Title level={4}>{studentData?.name}</Title>
+                    <Text type="secondary">
+                      {studentData?.matricNumber}
+                    </Text>
+                    <div style={{ marginTop: "8px" }}>
+                      <Text>{studentData?.department}</Text>
+                    </div>
+                    <div style={{ marginTop: "8px" }}>
+                      <Text>{studentData?.level}</Text>
+                    </div>
+                    <Divider />
+                    <Button
+                      type="primary"
+                      icon={<LockOutlined />}
+                      onClick={showPasswordModal}
+                      style={{
+                        backgroundColor: "#4CAF50",
+                        borderColor: "#4CAF50",
+                      }}
+                    >
+                      Change Password
+                    </Button>
+                  </Card>
+                </motion.div>
+              </Col>
+
+              {/* Profile Form Column */}
+              <Col xs={24} md={16}>
+                <motion.div variants={itemVariants}>
+                  <Card
+                    bordered={false}
+                    style={{
+                      borderRadius: "8px",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    }}
+                    extra={
+                      editMode ? (
+                        <span>
                           <Button
                             type="primary"
-                            icon={<LockOutlined />}
-                            onClick={showPasswordModal}
+                            icon={<SaveOutlined />}
+                            onClick={handleSave}
+                            loading={uploadLoading}
                             style={{
+                              marginRight: "8px",
                               backgroundColor: "#4CAF50",
                               borderColor: "#4CAF50",
                             }}
                           >
-                            Change Password
+                            Save
                           </Button>
-                        </Card>
-                      </motion.div>
-                    </Col>
-
-                    {/* Profile Form Column */}
-                    <Col xs={24} md={16}>
-                      <motion.div variants={itemVariants}>
-                        <Card
-                          bordered={false}
-                          style={{
-                            borderRadius: "8px",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                          }}
-                          extra={
-                            editMode ? (
-                              <span>
-                                <Button
-                                  type="primary"
-                                  icon={<SaveOutlined />}
-                                  onClick={handleSave}
-                                  style={{
-                                    marginRight: "8px",
-                                    backgroundColor: "#4CAF50",
-                                    borderColor: "#4CAF50",
-                                  }}
-                                >
-                                  Save
-                                </Button>
-                                <Button onClick={handleCancel}>Cancel</Button>
-                              </span>
-                            ) : (
-                              <Button
-                                type="default"
-                                icon={<EditOutlined />}
-                                onClick={handleEdit}
-                              >
-                                Edit Profile
-                              </Button>
-                            )
-                          }
-                          title={<Title level={4}>Personal Information</Title>}
+                          <Button onClick={handleCancel} disabled={uploadLoading}>Cancel</Button>
+                        </span>
+                      ) : (
+                        <Button
+                          type="default"
+                          icon={<EditOutlined />}
+                          onClick={handleEdit}
                         >
-                          <Form
-                            form={form}
-                            layout="vertical"
-                            initialValues={studentData}
+                          Edit Profile
+                        </Button>
+                      )
+                    }
+                    title={<Title level={4}>Personal Information</Title>}
+                  >
+                    <Form
+                      form={form}
+                      layout="vertical"
+                      initialValues={studentData}
+                    >
+                      <Row gutter={16}>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label="Full Name"
+                            name="name"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please input your name!",
+                              },
+                            ]}
                           >
-                            <Row gutter={16}>
-                              <Col xs={24} md={12}>
-                                <Form.Item
-                                  label="Full Name"
-                                  name="name"
-                                  rules={[
-                                    {
-                                      required: true,
-                                      message: "Please input your name!",
-                                    },
-                                  ]}
-                                >
-                                  <Input prefix={<UserOutlined />} disabled />
-                                </Form.Item>
-                              </Col>
-                              <Col xs={24} md={12}>
-                                <Form.Item
-                                  label="Matric Number"
-                                  name="matricNumber"
-                                >
-                                  <Input
-                                    prefix={<IdcardOutlined />}
-                                    disabled // Always disabled as matriculation number typically shouldn't be changed
-                                  />
-                                </Form.Item>
-                              </Col>
-                            </Row>
+                            <Input prefix={<UserOutlined />} disabled />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label="Matric Number"
+                            name="matricNumber"
+                          >
+                            <Input
+                              prefix={<IdcardOutlined />}
+                              disabled // Always disabled as matriculation number typically shouldn't be changed
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
 
-                            <Row gutter={16}>
-                              <Col xs={24} md={12}>
-                                <Form.Item
-                                  label="Email"
-                                  name="email"
-                                  rules={[
-                                    {
-                                      required: true,
-                                      message: "Please input your email!",
-                                    },
-                                    {
-                                      type: "email",
-                                      message: "Please enter a valid email!",
-                                    },
-                                  ]}
-                                >
-                                  <Input prefix={<MailOutlined />} disabled />
-                                </Form.Item>
-                              </Col>
-                              <Col xs={24} md={12}>
-                                <Form.Item label="Department" name="department">
-                                  <Input
-                                    prefix={<BankOutlined />}
-                                    disabled // Typically department changes would be handled by administration
-                                  />
-                                </Form.Item>
-                              </Col>
-                            </Row>
+                      <Row gutter={16}>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label="Email"
+                            name="email"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please input your email!",
+                              },
+                              {
+                                type: "email",
+                                message: "Please enter a valid email!",
+                              },
+                            ]}
+                          >
+                            <Input prefix={<MailOutlined />} disabled />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                          <Form.Item label="Department" name="department">
+                            <Input
+                              prefix={<BankOutlined />}
+                              disabled // Typically department changes would be handled by administration
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
 
-                            <Row gutter={16}>
-                              <Col xs={24} md={12}>
-                                <Form.Item
-                                  label="Year of Admission"
-                                  name="yearOfAdmission"
-                                >
-                                  <Input disabled />
-                                </Form.Item>
-                              </Col>
-                              <Col xs={24} md={12}>
-                                <Form.Item
-                                  label="Date of Birth"
-                                  name="dateOfBirth"
-                                  rules={[
-                                    {
-                                      required: true,
-                                      message:
-                                        "Please enter your date of birth",
-                                    },
-                                  ]}
-                                >
-                                  <Input disabled={!editMode} />
-                                </Form.Item>
-                              </Col>
-                            </Row>
+                      <Row gutter={16}>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label="Year of Admission"
+                            name="yearOfAdmission"
+                          >
+                            <Input disabled />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label="Date of Birth"
+                            name="dateOfBirth"
+                            rules={[
+                              {
+                                required: true,
+                                message:
+                                  "Please enter your date of birth",
+                              },
+                            ]}
+                          >
+                            <Input disabled={!editMode} />
+                          </Form.Item>
+                        </Col>
+                      </Row>
 
-                            <Row gutter={16}>
-                              <Col xs={24} md={12}>
-                                <Form.Item
-                                  label="Gender"
-                                  name="gender"
-                                  rules={[{ required: true, message: 'Please select your gender' }]}
-                                >
-                                  <Select disabled={!editMode}>
-                                    <Option value="male">Male</Option>
-                                    <Option value="female">Female</Option>
-                                  </Select>
-                                </Form.Item>
-                              </Col>
-                              <Col xs={24} md={12}>
-                                <Form.Item
-                                  label="Phone Number"
-                                  name="phoneNumber"
-                                  rules={[
-                                    {
-                                      required: true,
-                                      message: "Please enter your phone number",
-                                    },
-                                  ]}
-                                >
-                                  <Input disabled={!editMode} />
-                                </Form.Item>
-                              </Col>
-                            </Row>
-                          </Form>
-                        </Card>
-                      </motion.div>
-                    </Col>
-                  </Row>
+                      <Row gutter={16}>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label="Gender"
+                            name="gender"
+                            rules={[{ required: true, message: 'Please select your gender' }]}
+                          >
+                            <Select disabled={!editMode}>
+                              <Option value="male">Male</Option>
+                              <Option value="female">Female</Option>
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} md={12}>
+                          <Form.Item
+                            label="Phone Number"
+                            name="phoneNumber"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please enter your phone number",
+                              },
+                            ]}
+                          >
+                            <Input disabled={!editMode} />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+
+                      {editMode && (
+                        <Row>
+                          <Col xs={24}>
+                            <Form.Item label="Photo Upload">
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                <div style={{ marginBottom: '10px' }}>
+                                  <Text type="secondary">Click on the camera icon next to your profile picture to change your photo</Text>
+                                </div>
+                                {imageFile && (
+                                  <div>
+                                    <Text strong>{imageFile.name}</Text>
+                                    <Text type="secondary"> - {(imageFile.size / 1024).toFixed(1)} KB</Text>
+                                  </div>
+                                )}
+                              </div>
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      )}
+                    </Form>
+                  </Card>
                 </motion.div>
-              </TabPane>
-            </Tabs>
+              </Col>
+            </Row>
           </motion.div>
-        </Content>
-      </Layout>
+        </TabPane>
+      </Tabs>
+    </motion.div>
+  );
+
+  return (
+    <>
+      <StudentLayout
+        studentData={studentData}
+        selectedKey="profile"
+        breadcrumbItems={['Profile']}
+      >
+        {profileContent}
+      </StudentLayout>
 
       {/* Password Change Modal */}
       <Modal
@@ -580,7 +665,7 @@ const ProfileStudent = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </Layout>
+    </>
   );
 };
 
