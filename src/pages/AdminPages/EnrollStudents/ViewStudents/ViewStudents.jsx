@@ -12,6 +12,7 @@ import {
   Modal,
   Form,
   Select,
+  Avatar,
 } from "antd";
 import {
   HomeOutlined,
@@ -19,6 +20,7 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { db } from "../../../../firebase/firebaseConfig";
 import {
@@ -163,6 +165,20 @@ const ViewStudents = () => {
 
   // Table Columns – Added View, Edit, Delete actions
   const columns = [
+    {
+      title: "Profile",
+      dataIndex: "profileImage",
+      key: "profileImage",
+      render: (_, record) => (
+        <Avatar
+          size={40}
+          src={record.profileImage?.data}
+          icon={<UserOutlined />}
+          style={{ backgroundColor: record.profileImage?.data ? '#fff' : '#4CAF50' }}
+        />
+      ),
+      width: 80,
+    },
     { title: "Name", dataIndex: "name", key: "name" },
     { title: "Matric Number", dataIndex: "matricNumber", key: "matricNumber" },
     // { title: "Email", dataIndex: "email", key: "email" },
@@ -250,6 +266,16 @@ const ViewStudents = () => {
         onCancel={() => setIsEditModalVisible(false)}
       >
         <Form form={form} layout="vertical">
+          {/* Display current photo if available */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <Avatar
+              size={100}
+              src={editingStudent?.profileImage?.data}
+              icon={<UserOutlined />}
+              style={{ backgroundColor: editingStudent?.profileImage?.data ? '#fff' : '#4CAF50' }}
+            />
+          </div>
+          
           <Form.Item
             label="Name"
             name="name"

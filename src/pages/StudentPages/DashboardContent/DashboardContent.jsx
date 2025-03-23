@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Card, Row, Col, Typography, Button, Divider } from 'antd';
+import { Table, Card, Row, Col, Typography, Button, Divider, Skeleton } from 'antd';
 import { BookOutlined } from '@ant-design/icons';
 import { motion } from 'framer-motion';
 
@@ -10,7 +10,8 @@ const DashboardContent = ({
   courses, 
   viewMode, 
   setViewMode, 
-  columns 
+  columns,
+  loading
 }) => {
   // Animation variants
   const containerVariants = {
@@ -44,8 +45,14 @@ const DashboardContent = ({
       <motion.div variants={itemVariants}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <Title level={2} style={{ margin: 0 }}>Welcome, {studentData?.name}!</Title>
-            <Text type="secondary">Department: {studentData?.department}</Text>
+            {loading ? (
+              <Skeleton.Input style={{ width: 300 }} active />
+            ) : (
+              <>
+                <Title level={2} style={{ margin: 0 }}>Welcome, {studentData?.name}!</Title>
+                <Text type="secondary">Department: {studentData?.department}</Text>
+              </>
+            )}
           </div>
           <div>
             <Button.Group>
@@ -56,6 +63,7 @@ const DashboardContent = ({
                   backgroundColor: viewMode === 'table' ? '#4CAF50' : '#fff',
                   borderColor: viewMode === 'table' ? '#4CAF50' : undefined,
                 }}
+                disabled={loading}
               >
                 Table View
               </Button>
@@ -66,6 +74,7 @@ const DashboardContent = ({
                   backgroundColor: viewMode === 'card' ? '#4CAF50' : '#fff',
                   borderColor: viewMode === 'card' ? '#4CAF50' : undefined,
                 }}
+                disabled={loading}
               >
                 Card View
               </Button>
@@ -79,7 +88,11 @@ const DashboardContent = ({
         <Row gutter={16} style={{ marginBottom: '24px' }}>
           <Col xs={24} sm={12} md={8} lg={6}>
             <Card bordered={false} style={{ borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-              <Statistic title="Courses Enrolled" value={courses.length} prefix={<BookOutlined />} />
+              {loading ? (
+                <Skeleton active avatar={false} paragraph={{ rows: 1 }} />
+              ) : (
+                <Statistic title="Courses Enrolled" value={courses.length} prefix={<BookOutlined />} />
+              )}
             </Card>
           </Col>
         </Row>
@@ -95,12 +108,16 @@ const DashboardContent = ({
           variants={itemVariants}
           style={{ overflowX: 'auto' }}
         >
-          <Table 
-            columns={columns} 
-            dataSource={courses} 
-            pagination={false}
-            style={{ borderRadius: '8px', overflow: 'hidden' }}
-          />
+          {loading ? (
+            <Skeleton active paragraph={{ rows: 6 }} />
+          ) : (
+            <Table 
+              columns={columns} 
+              dataSource={courses} 
+              pagination={false}
+              style={{ borderRadius: '8px', overflow: 'hidden' }}
+            />
+          )}
         </motion.div>
       )}
 
@@ -111,55 +128,67 @@ const DashboardContent = ({
           initial="hidden"
           animate="visible"
         >
-          <Row gutter={[16, 16]}>
-            {courses.map(course => (
-              <Col xs={24} sm={12} md={8} lg={6} key={course.key}>
-                <motion.div variants={itemVariants}>
-                  <Card
-                    hoverable
-                    style={{ 
-                      borderRadius: '8px', 
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                      height: '100%'
-                    }}
-                    cover={
-                      <div 
-                        style={{ 
-                          height: '80px', 
-                          background: '#4CAF50', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          color: '#fff',
-                          fontSize: '32px',
-                          fontWeight: 'bold',
-                          borderTopLeftRadius: '8px',
-                          borderTopRightRadius: '8px',
-                        }}
-                      >
-                        {course.courseCode}
-                      </div>
-                    }
-                  >
-                    <div style={{ padding: '8px 0' }}>
-                      <div style={{ marginBottom: '8px' }}>
-                        <Text strong style={{ fontSize: '16px' }}>{course.courseTitle}</Text>
-                      </div>
-                      <div style={{ marginBottom: '4px' }}>
-                        <Text type="secondary">Course Code: {course.courseCode}</Text>
-                      </div>
-                      <div style={{ marginBottom: '4px' }}>
-                        <Text type="secondary">Credit Hours: {course.creditHours}</Text>
-                      </div>
-                      <div style={{ marginBottom: '4px' }}>
-                        <Text type="secondary">Level: {course.level}</Text>
-                      </div>
-                    </div>
+          {loading ? (
+            <Row gutter={[16, 16]}>
+              {[1, 2, 3, 4].map(key => (
+                <Col xs={24} sm={12} md={8} lg={6} key={key}>
+                  <Card>
+                    <Skeleton active avatar={false} paragraph={{ rows: 3 }} />
                   </Card>
-                </motion.div>
-              </Col>
-            ))}
-          </Row>
+                </Col>
+              ))}
+            </Row>
+          ) : (
+            <Row gutter={[16, 16]}>
+              {courses.map(course => (
+                <Col xs={24} sm={12} md={8} lg={6} key={course.key}>
+                  <motion.div variants={itemVariants}>
+                    <Card
+                      hoverable
+                      style={{ 
+                        borderRadius: '8px', 
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                        height: '100%'
+                      }}
+                      cover={
+                        <div 
+                          style={{ 
+                            height: '80px', 
+                            background: '#4CAF50', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            color: '#fff',
+                            fontSize: '32px',
+                            fontWeight: 'bold',
+                            borderTopLeftRadius: '8px',
+                            borderTopRightRadius: '8px',
+                          }}
+                        >
+                          {course.courseCode}
+                        </div>
+                      }
+                    >
+                      <div style={{ padding: '8px 0' }}>
+                        <div style={{ marginBottom: '8px' }}>
+                          <Text strong style={{ fontSize: '16px' }}>{course.courseTitle}</Text>
+                        </div>
+                        <div style={{ marginBottom: '4px' }}>
+                          <Text type="secondary">Course Code: {course.courseCode}</Text>
+                        </div>
+                        <div style={{ marginBottom: '4px' }}>
+                          <Text type="secondary">Credit Hours: {course.creditHours}</Text>
+                        </div>
+                        <div style={{ marginBottom: '4px' }}>
+                          <Text type="secondary">Level: {course.level}</Text>
+                        </div>
+                      </div>
+                    </Card>
+                  </motion.div>
+                </Col>
+              ))}
+            </Row>
+          )}
         </motion.div>
       )}
     </motion.div>

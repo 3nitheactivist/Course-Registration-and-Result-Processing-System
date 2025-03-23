@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Typography } from 'antd';
+import { Typography, Skeleton } from 'antd';
 import { auth, db } from '../../../firebase/firebaseConfig';
 import { collection, doc, getDoc, getDocs } from 'firebase/firestore';
 import DashboardContent from '../DashboardContent/DashboardContent';
@@ -31,11 +31,10 @@ const StudentDashboard = () => {
 
         if (studentDoc) {
           const student = studentDoc.data();
+          // Include the entire studentDoc data with id
           setStudentData({
-            name: student.name,
-            matricNumber: student.matricNumber,
-            department: student.department,
-            email: student.email
+            id: studentDoc.id,
+            ...student
           });
 
           // Fetch courses data
@@ -105,14 +104,21 @@ const StudentDashboard = () => {
       selectedKey="dashboard"
       breadcrumbItems={['Dashboard']}
     >
-      <DashboardContent 
-        studentData={studentData}
-        courses={courses}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        columns={columns}
-        loading={loading}
-      />
+      {loading ? (
+        <div style={{ padding: '20px' }}>
+          <Skeleton active avatar paragraph={{ rows: 4 }} />
+          <Skeleton active paragraph={{ rows: 4 }} style={{ marginTop: '20px' }} />
+        </div>
+      ) : (
+        <DashboardContent 
+          studentData={studentData}
+          courses={courses}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          columns={columns}
+          loading={loading}
+        />
+      )}
     </StudentLayout>
   );
 };

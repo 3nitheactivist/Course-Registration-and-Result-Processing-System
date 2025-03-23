@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Breadcrumb, Card, message, Skeleton, List, Button } from "antd";
-import { HomeOutlined, ArrowLeftOutlined } from "@ant-design/icons";
+import { Breadcrumb, Card, message, Skeleton, List, Button, Avatar, Row, Col, Typography } from "antd";
+import { HomeOutlined, ArrowLeftOutlined, UserOutlined } from "@ant-design/icons";
 import { db } from "../../../../firebase/firebaseConfig";
 import { doc, getDoc } from "firebase/firestore";
 import AdminLayout from "../../AdminLayout";
+
+const { Title, Text } = Typography;
 
 const StudentProfile = () => {
   const { studentId } = useParams();
@@ -81,29 +83,55 @@ const StudentProfile = () => {
             </Button>
           }
         >
-          <p>
-            <strong>Matric Number:</strong> {student.matricNumber}
-          </p>
-          <p>
-            <strong>Email:</strong> {student.email}
-          </p>
-          <p>
-            <strong>Department:</strong> {student.department}
-          </p>
-          <h3>Enrolled Courses:</h3>
-          {courses && courses.length > 0 ? (
-            <List
-              bordered
-              dataSource={courses}
-              renderItem={(course) => (
-                <List.Item>
-                  {course.courseTitle} ({course.courseCode})
-                </List.Item>
+          <Row gutter={[24, 24]}>
+            <Col xs={24} md={6} style={{ textAlign: 'center' }}>
+              <Avatar
+                size={150}
+                src={student.profileImage?.data}
+                icon={<UserOutlined />}
+                style={{ 
+                  backgroundColor: student.profileImage?.data ? '#fff' : '#4CAF50',
+                  marginBottom: 16 
+                }}
+              />
+              <Title level={4}>{student.name}</Title>
+              <Text type="secondary">{student.matricNumber}</Text>
+            </Col>
+            <Col xs={24} md={18}>
+              <div style={{ background: '#f5f5f5', padding: 16, borderRadius: 8, marginBottom: 16 }}>
+                <p>
+                  <strong>Email:</strong> {student.email}
+                </p>
+                <p>
+                  <strong>Department:</strong> {student.department}
+                </p>
+                <p>
+                  <strong>Phone Number:</strong> {student.phoneNumber || 'Not provided'}
+                </p>
+                <p>
+                  <strong>Gender:</strong> {student.gender || 'Not provided'}
+                </p>
+                <p>
+                  <strong>Date of Birth:</strong> {student.dateOfBirth || 'Not provided'}
+                </p>
+              </div>
+              
+              <h3>Enrolled Courses:</h3>
+              {courses && courses.length > 0 ? (
+                <List
+                  bordered
+                  dataSource={courses}
+                  renderItem={(course) => (
+                    <List.Item>
+                      {course.courseTitle} ({course.courseCode})
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <p>No enrolled courses</p>
               )}
-            />
-          ) : (
-            <p>No enrolled courses</p>
-          )}
+            </Col>
+          </Row>
         </Card>
       ) : null}
     </AdminLayout>

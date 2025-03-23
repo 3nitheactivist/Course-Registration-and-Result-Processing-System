@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Layout, Menu, Avatar, Breadcrumb, Button, Typography } from 'antd';
+import { Layout, Menu, Avatar, Breadcrumb, Button, Typography, Skeleton } from 'antd';
 import { 
   DashboardOutlined, 
   UserOutlined, 
@@ -88,18 +88,23 @@ const StudentLayout = ({ children, studentData, selectedKey, breadcrumbItems }) 
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar 
-                size={36} 
-                icon={<UserOutlined />} 
-                style={{ backgroundColor: '#4CAF50' }} 
-              />
-              <div style={{ marginLeft: '12px' }}>
-                <div>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>{studentData?.matricNumber}</Text>
+            {!studentData ? (
+              <Skeleton.Avatar active size={36} />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <Avatar 
+                  size={36} 
+                  icon={<UserOutlined />} 
+                  src={studentData?.profileImage?.data}
+                  style={{ backgroundColor: '#4CAF50' }} 
+                />
+                <div style={{ marginLeft: '12px' }}>
+                  <div>
+                    <Text type="secondary" style={{ fontSize: '12px' }}>{studentData?.matricNumber}</Text>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             <Button 
               type="primary" 
               icon={<LogoutOutlined />} 

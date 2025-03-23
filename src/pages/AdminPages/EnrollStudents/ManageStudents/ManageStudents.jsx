@@ -7,11 +7,13 @@ import {
   Breadcrumb,
   Skeleton,
   message,
+  Avatar,
 } from "antd";
 import {
   EyeOutlined,
   PlusOutlined,
   SearchOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import { db } from "../../../../firebase/firebaseConfig";
 import {
@@ -72,10 +74,29 @@ const ManageStudents = () => {
   // Table Columns
   const columns = [
     {
+      title: "Profile",
+      dataIndex: "profileImage",
+      key: "profileImage",
+      render: (_, record) => (
+        <Avatar
+          size={40}
+          src={record.profileImage?.data}
+          icon={<UserOutlined />}
+          style={{ backgroundColor: record.profileImage?.data ? '#fff' : '#4CAF50' }}
+        />
+      ),
+      width: 80,
+    },
+    {
       title: "Name",
       dataIndex: "name",
       key: "name",
       sorter: (a, b) => a.name.localeCompare(b.name),
+      render: (text, record) => (
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <span style={{ marginLeft: 8 }}>{text}</span>
+        </div>
+      ),
     },
     {
       title: "Matric Number",
@@ -153,7 +174,7 @@ const ManageStudents = () => {
               <Table
                 columns={columns}
                 dataSource={filteredStudents}
-                pagination={{ pageSize: 3 }}
+                pagination={{ pageSize: 5 }}
                 scroll={{ y: 200 }} // Fix table header
               />
             )}

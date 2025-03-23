@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   setDoc,
   collection,
@@ -30,6 +30,7 @@ import {
   Select,
   Upload,
   message,
+  Avatar,
 } from "antd";
 import {
   HomeOutlined,
@@ -37,6 +38,9 @@ import {
   PlusOutlined,
   DeleteOutlined,
   SearchOutlined,
+  UserOutlined,
+  LoadingOutlined,
+  CameraOutlined,
 } from "@ant-design/icons";
 import Papa from "papaparse";
 import { db, auth, studentAuth } from "../../../config/firebase";
@@ -56,6 +60,9 @@ const EnrollStudents = () => {
   const [alertMessage, setAlertMessage] = useState(null);
   const [alertType, setAlertType] = useState("info");
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Real-time listener for students created by the current admin (sorted by createdAt descending)
   useEffect(() => {
@@ -115,9 +122,11 @@ const EnrollStudents = () => {
   // Handle closing modal
   const closeModal = () => {
     setModalVisible(false);
+    setImageFile(null);
+    setImagePreview(null);
   };
 
-  // Modified: Handle enrolling a student via form
+  // Handle enrolling a student via form
   const handleEnrollStudent = async (values) => {
     setLoading(true);
     const adminUser = auth.currentUser;
@@ -173,11 +182,21 @@ const EnrollStudents = () => {
         enrolledBy: adminUser.uid,
         userId: newUserId
       };
+      
+      // Add profile image if available
+      if (imageFile && imagePreview) {
+        studentData.profileImage = {
+          data: imagePreview,
+          uploaded: new Date().toISOString()
+        };
+      }
 
       await setDoc(doc(db, "students", newUserId), studentData);
 
       showAlert("✅ Student enrolled successfully!", "success");
       form.resetFields();
+      setImageFile(null);
+      setImagePreview(null);
       closeModal();
     } catch (error) {
       console.error("❌ Error enrolling student:", error);
@@ -363,6 +382,72 @@ const EnrollStudents = () => {
         okButtonProps={{ disabled: loading }}
       >
         <Form form={form} layout="vertical" onFinish={handleEnrollStudent}>
+          {/* Profile Image Upload */}
+          <Form.Item label="Student Photo">
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ position: 'relative', marginBottom: 16 }}>
+                <Avatar 
+                  size={104} 
+                  icon={<UserOutlined />} 
+                  src={imagePreview}
+                  style={{ 
+                    backgroundColor: '#4CAF50',
+                    cursor: 'pointer',
+                    border: '1px dashed #d9d9d9',
+                  }} 
+                  onClick={() => fileInputRef.current?.click()}
+                />
+                <Button
+                  shape="circle"
+                  icon={<CameraOutlined />}
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    right: 0,
+                    backgroundColor: "#fff",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+                    border: "none",
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                />
+              </div>
+              
+              <input 
+                type="file" 
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (!file) return;
+                  
+                  // Check file size (max 2MB)
+                  if (file.size > 2 * 1024 * 1024) {
+                    message.error('Image must be smaller than 2MB!');
+                    return;
+                  }
+                  
+                  // Save file to state
+                  setImageFile(file);
+                  
+                  // Create preview
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    setImagePreview(event.target.result);
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+              
+              {imageFile && (
+                <div style={{ marginTop: 8 }}>
+                  <span style={{ fontWeight: 'bold' }}>{imageFile.name}</span>
+                  <span style={{ color: '#888' }}> - {(imageFile.size / 1024).toFixed(1)} KB</span>
+                </div>
+              )}
+            </div>
+          </Form.Item>
+
           <Form.Item label="Name" name="name" rules={[{ required: true }]}>
             <Input />
           </Form.Item>

@@ -15,6 +15,7 @@ import {
   Modal,
   Alert,
   Select,
+  Skeleton,
 } from "antd";
 
 import { motion } from "framer-motion";
@@ -128,36 +129,39 @@ const ProfileStudent = () => {
         return;
       }
 
-      // Prepare profile image data if available
-      let profileImageData = null;
-      if (imageFile) {
-        try {
-          // Use the preview we already generated
-          if (imagePreview) {
-            profileImageData = { 
-              data: imagePreview,
-              uploaded: new Date()
-            };
-          }
-        } catch (imageError) {
-          console.error('Error processing image:', imageError);
-          message.warning('Could not process the image, but continuing with update');
-        }
-      }
-
       // Update fields
       const updateData = {
         gender: values.gender,
         phoneNumber: values.phoneNumber,
         dateOfBirth: values.dateOfBirth
       };
-
+      
       // Add profile image if available
-      if (profileImageData) {
-        updateData.profileImage = profileImageData;
+      if (imageFile && imagePreview) {
+        updateData.profileImage = {
+          data: imagePreview,
+          uploaded: new Date().toISOString()
+        };
       }
 
+      // Update the document
       await updateDoc(studentRef, updateData);
+
+      // Fetch the updated student data to refresh state
+      const studentsRef = collection(db, "students");
+      const studentSnapshot = await getDocs(studentsRef);
+      const updatedStudentDoc = studentSnapshot.docs.find(
+        (doc) => doc.id === studentData.id
+      );
+
+      if (updatedStudentDoc) {
+        const updatedStudent = {
+          id: updatedStudentDoc.id,
+          ...updatedStudentDoc.data(),
+          yearOfAdmission: studentData.yearOfAdmission
+        };
+        setStudentData(updatedStudent);
+      }
 
       setEditMode(false);
       message.success('Profile updated successfully');
@@ -586,7 +590,78 @@ const ProfileStudent = () => {
         selectedKey="profile"
         breadcrumbItems={['Profile']}
       >
-        {profileContent}
+        {loading ? (
+          // Skeleton Loading State
+          <div>
+            <Skeleton active paragraph={{ rows: 1 }} />
+            <div style={{ marginTop: '24px' }}>
+              <Tabs defaultActiveKey="1">
+                <TabPane tab="Personal Information" key="1">
+                  <Row gutter={[24, 24]}>
+                    {/* Profile Picture Column Skeleton */}
+                    <Col xs={24} md={8}>
+                      <Card
+                        bordered={false}
+                        style={{
+                          textAlign: "center",
+                          borderRadius: "8px",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                          <Skeleton.Avatar active size={120} style={{ marginBottom: '24px' }} />
+                          <Skeleton active paragraph={{ rows: 3 }} title={{ width: '60%' }} />
+                          <Divider />
+                          <Skeleton.Button active style={{ width: '180px', height: '32px' }} />
+                        </div>
+                      </Card>
+                    </Col>
+                    
+                    {/* Profile Form Column Skeleton */}
+                    <Col xs={24} md={16}>
+                      <Card
+                        bordered={false}
+                        style={{
+                          borderRadius: "8px",
+                          boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                        }}
+                        title={<Skeleton.Input style={{ width: 200 }} active />}
+                        extra={<Skeleton.Button active />}
+                      >
+                        <Row gutter={16}>
+                          <Col xs={24} md={12}>
+                            <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                          </Col>
+                          <Col xs={24} md={12}>
+                            <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                          </Col>
+                        </Row>
+                        <Row gutter={16}>
+                          <Col xs={24} md={12}>
+                            <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                          </Col>
+                          <Col xs={24} md={12}>
+                            <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                          </Col>
+                        </Row>
+                        <Row gutter={16}>
+                          <Col xs={24} md={12}>
+                            <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                          </Col>
+                          <Col xs={24} md={12}>
+                            <Skeleton active paragraph={{ rows: 1 }} title={{ width: '40%' }} />
+                          </Col>
+                        </Row>
+                      </Card>
+                    </Col>
+                  </Row>
+                </TabPane>
+              </Tabs>
+            </div>
+          </div>
+        ) : (
+          profileContent
+        )}
       </StudentLayout>
 
       {/* Password Change Modal */}
