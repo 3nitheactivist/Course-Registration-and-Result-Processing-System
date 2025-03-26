@@ -239,7 +239,7 @@ const ManageCourses = () => {
       sorter: (a, b) => a.courseTitle.localeCompare(b.courseTitle),
     },
     {
-      title: "Credit Hours",
+      title: "Course Unit",
       dataIndex: "creditHours",
       key: "creditHours",
       sorter: (a, b) => a.creditHours - b.creditHours,

@@ -177,7 +177,7 @@ const DashboardContent = ({
                           <Text type="secondary">Course Code: {course.courseCode}</Text>
                         </div>
                         <div style={{ marginBottom: '4px' }}>
-                          <Text type="secondary">Credit Hours: {course.creditHours}</Text>
+                          <Text type="secondary">Course Unit: {course.creditHours}</Text>
                         </div>
                         <div style={{ marginBottom: '4px' }}>
                           <Text type="secondary">Level: {course.level}</Text>

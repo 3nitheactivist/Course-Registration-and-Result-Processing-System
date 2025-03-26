@@ -77,7 +77,7 @@ const StudentDashboard = () => {
       key: 'courseCode',
     },
     {
-      title: 'Credit Hours',
+      title: 'Course Unit',
       dataIndex: 'creditHours',
       key: 'creditHours',
     },
