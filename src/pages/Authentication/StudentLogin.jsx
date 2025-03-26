@@ -233,7 +233,7 @@ const StudentLogin = () => {
                 transition={{ delay: 0.5, duration: 0.5 }}
               >
                 <Form.Item
-                  label={<span style={labelStyle}>Password</span>}
+                  label={<span style={labelStyle}>Password   <span style={{color: "grey", fontWeight: "200", fontSize: "13px"}}>default password - student123</span></span>}
                   name="password"
                   rules={[{ required: true, message: "Please input your password!" }]}
                 >
